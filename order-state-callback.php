@@ -1,6 +1,6 @@
 <?php
 /**
-* 2023 Servantes
+* 2023 Servantes.
 *
 * This file is licenced under the Software License Agreement.
 * With the purchase or the installation of the software in your application
@@ -14,8 +14,7 @@
 */
 
 /*
-tato stránka slouží jako API a vrací objednávky za zvolené období
-je nutné se ověřit pomocí tokenu
+tato stránka slouží jako API, pro automatickou změnu stavů v PS
 */
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -29,21 +28,18 @@ $context->controller = new FrontController();
 $configuration = $module->getCurrentApiConfiguration();
 $token = $module->getBearerToken();
 
+$json = Tools::file_get_contents('php://input');
+$data = json_decode($json, true);
+
 $output = [
     'result' => false,
     'debug' => 'unexpected state',
 ];
 
-if (false == Tools::getIsset('updated_since')) {
+if (false == array_key_exists('code', $data)) {
     $output['result'] = false;
-    $output['debug'] = 'updated_since not set';
-}
-/*
-else if(is_numeric($_GET['updated_since']) == false) {
-    $output['result'] = false;
-    $output['debug'] = 'updated_since must be numeric';
-}*/
-elseif (false == $token) {
+    $output['debug'] = 'code not set';
+} elseif (false == $token) {
     $output['result'] = false;
     $output['debug'] = 'token not set';
 } elseif (false == $configuration) {
@@ -55,12 +51,11 @@ elseif (false == $token) {
 } elseif (1 == $configuration['api_enable']) {
     if ($configuration['token'] == $token) {
         $output['result'] = true;
-        $output['debug'] = '';
-        $output['orders'] = $module->getUpdatedOrders(Tools::getValue('updated_since'));
+        $output['debug'] = $module->setOrderStates($data);
     } else {
         $output['result'] = false;
         $output['debug'] = 'token not valid';
     }
 }
-
+// $module->logData($output);
 echo json_encode($output, JSON_PRETTY_PRINT);

@@ -1,65 +1,55 @@
-{*
-* 2007-2022 PrestaShop
+{**
+* 2023 Servantes
 *
-* NOTICE OF LICENSE
+* This file is licenced under the Software License Agreement.
+* With the purchase or the installation of the software in your application
+* you accept the licence agreement.
 *
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
+* You must not modify, adapt or create derivative works of this source code
 *
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2022 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
+*  @author Pavel Vejnar <vejnar.p@gmail.com>
+*  @copyright  2022 - 2023 Servantes
+*  @license LICENSE.txt 
 *}
+
 {if $alert_state eq 'info_setup_module'}
-<div class="alert alert-info">{l s='Modul Miguel je správně nainstalován a nyní čeká na vaše nastavení.' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-info">{l s='The Miguel add-on has been installed correctly and is now waiting for your settings.' mod='miguel'}</div>
 {elseif $alert_state eq 'info_setup_module_first'}
-<div class="alert alert-warning">{l s='Pro povolení Miguela je nutné vložit API klíč.' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-warning">{l s='An API key must be inserted to enable Miguel.' mod='miguel'}</div>
 {elseif $alert_state eq 'info_setup_module_activate'}
-<div class="alert alert-warning">{l s='Miguel není aktivní, povolte jej.' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-warning">{l s='Miguel is not active, enable it.' mod='miguel'}</div>
 {elseif $alert_state eq 'warning_api_fail'}
-<div class="alert alert-danger">{l s='Vložené údaje nejsou správné, Miguel není spuštěn.' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-danger">{l s='Your API key is incorrect, Miguel is not running.' mod='miguel'}</div>
 {elseif $alert_state eq 'success_api_ok'}
-<div class="alert alert-success">{l s='Miguel je aktivní.' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-success">{l s='Miguel is running correctly' mod='miguel'}</div>
 {else}
-<div class="alert alert-danger">{l s='Nespecifikovaný stav modulu' d='Modules.Miguel.Admin'}</div>
+<div class="alert alert-danger">{l s='Unspecified add-on status' mod='miguel'}</div>
 {/if}
 
 
 <div class="panel">
-	<h3><i class="icon icon-book"></i> {l s='Miguel' d='Modules.Miguel.Admin'}</h3>
+	<h3><i class="icon icon-book"></i> {l s='Miguel' mod='miguel'}</h3>
 	<p>
-		<strong>{l s='Prodávejte výhodně své e-knihy na vlastním e-shopu!' d='Modules.Miguel.Admin'}</strong><br />
-		{l s=' Miguel vám umožní prodávat zabezpečené e-knihy napřímo zákazníkům vašeho e-shopu.' d='Modules.Miguel.Admin'}<br />
-		{l s='Zákazník si e-knihu koupí ve vašem e-shopu stejně jako jakoukoli jinou knihu. Zaplacená e-kniha mu však dorazí ze serveru Miguela. Zákazník si ji pak přečte v libovolné aplikaci či zařízení.' d='Modules.Miguel.Admin'}<br />
-		{l s='Každá kopie je unikátní pro daného zákazníka a jeho údaje jsou v ní uloženy.' d='Modules.Miguel.Admin'}<br />
+		<strong>{l s='Sell your e-books on your own e-shop!' mod='miguel'}</strong><br />
+		{l s='Miguel add-on allows you to sell secure e-books directly to customers from your e-shop.' mod='miguel'}<br />
+		{l s='A customer buys an e-book in your e-shop just like any other book. However, the paid e-book gets from Miguel\'s server. The customer then can read it in a favorite application or device.' mod='miguel'}<br />
+		{l s='Each copy is unique for a given customer and cutomer data is stored in it.' mod='miguel'}<br />
 	</p>
 	<br />
 	<p>
-		<a href='https://www.melvil.cz/wp-content/uploads/2021/10/servantes-Miguel.pdf' target='_blank'>{l s='Přečtětě si více o Miguelovi.' d='Modules.Miguel.Admin'}</a>
+		<a href='https://www.servantes.cz/miguel' target='_blank'>{l s='Read more about Miguel.' mod='miguel'}</a>
 	</p>
 </div>
 
 <div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Dokumentace' d='Modules.Miguel.Admin'}</h3>
+	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='miguel'}</h3>
 	<p>
-		&raquo; {l s='Prozkoumejte následující informace pro nastavení modulu:' d='Modules.Miguel.Admin'} :
+		&raquo; {l s='Explore the following information to set up the module' mod='miguel'} :
 		<ul>
-			<li><a href="https://miguel-test.servantes.cz/v1/swaggerui/documentation" target="_blank">{l s='Dokumentace' d='Modules.Miguel.Admin'}</a></li>
-			<li><a href="https://app.servantes.cz/miguel/settings" target="_blank">{l s='Získat API klíč pro server - Produkce' d='Modules.Miguel.Admin'}</a></li>
-			<li><a href="https://staging-env.servantes.cz/miguel/settings" target="_blank">{l s='Získat API klíč pro server - Staging' d='Modules.Miguel.Admin'}</a></li>
-			<li><a href="https://columbo-test.neatech.cz/miguel/settings" target="_blank">{l s='Získat API klíč pro server - Test' d='Modules.Miguel.Admin'}</a></li>
+			<li><a href="https://docs.miguel.servantes.cz" target="_blank">{l s='Documentation' mod='miguel'}</a></li>
+			<li><a href="https://app.servantes.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Production' mod='miguel'}</a></li>
+			<li><a href="https://staging-env.servantes.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Staging' mod='miguel'}</a></li>
+			<li><a href="https://columbo-test.neatech.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Test' mod='miguel'}</a></li>
 		</ul>
 	</p>
 </div>
