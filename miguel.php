@@ -115,7 +115,6 @@ class Miguel extends Module
                 $alert_state = 'info_setup_module';
             }
         } elseif ($api_configuration['api_enable']) { // je povoleno api, validuji token
-            // $test_key = $this->curlPostTest($api_configuration['url']."/v1/prestashop/connect",$this->getPrestashopDetails(),$api_configuration['token']);
             $test_key = $this->curlPost('/v1/prestashop/connect', $this->getPrestashopDetails());
             if (false == $test_key) {
                 $alert_state = 'warning_api_fail';
@@ -460,6 +459,9 @@ class Miguel extends Module
         $res = $this->curlPost('/v1/orders', $body_orders);
     }
 
+    /**
+     * @param String $uri
+     */
     public function curlGet($uri)
     {
         $configuration = $this->getCurrentApiConfiguration();
@@ -488,8 +490,9 @@ class Miguel extends Module
         ]);
 
         $headers = [];
-        $headers[] = 'Content-Type:application/json';
+        $headers[] = 'Content-Type: application/json';
         $headers[] = 'Authorization: Bearer ' . $configuration['token'];
+        $headers[] = 'Accept-Language: ' . $this->getLanguageCode();
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); // set return type json
@@ -506,6 +509,10 @@ class Miguel extends Module
         return false;
     }
 
+    /**
+     * @param String $uri
+     * @param Array<string, string> $params
+     */
     public function curlPost($uri, array $params)
     {
         $configuration = $this->getCurrentApiConfiguration();
@@ -536,8 +543,9 @@ class Miguel extends Module
         ]);
 
         $headers = [];
-        $headers[] = 'Content-Type:application/json';
+        $headers[] = 'Content-Type: application/json';
         $headers[] = 'Authorization: Bearer ' . $configuration['token'];
+        $headers[] = 'Accept-Language: ' . $this->getLanguageCode();
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); // set return type json
@@ -827,5 +835,27 @@ class Miguel extends Module
         }
 
         return $orders;
+    }
+
+    /**
+     * @param Integer|false $lang_id
+     * @return String
+     */
+    private function getLanguageCode($lang_id = false)
+    {
+        if ($lang_id == false) {
+            $lang_id = $this->context->language->id;
+        }
+
+        $language = new Language($lang_id);
+        if (false == Validate::isLoadedObject($language)) {
+            if (defined('_LOGGER_')) {
+                $this->logger->logDebug('getLanguageCode: Cannot create new Language: ' . $lang_id);
+            }
+
+            return;
+        }
+
+        return $language->iso_code;
     }
 }
