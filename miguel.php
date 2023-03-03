@@ -399,7 +399,7 @@ class Miguel extends Module
             return;
         }
         $language = new Language($customer->id_lang);
-        if (false == Validate::isLoadedObject($customer)) {
+        if (false == Validate::isLoadedObject($language)) {
             if (defined('_LOGGER_')) {
                 $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Language: ' . $customer->id_lang . ', id_order: ' . $params['id_order']);
             }
