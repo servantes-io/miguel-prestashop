@@ -601,7 +601,7 @@ class Miguel extends Module
         $ps = [];
         $ps['ps_version'] = _PS_VERSION_;
         $ps['module_version'] = $this->version;
-        $ps['base_url'] = _PS_BASE_URL_;
+        $ps['base_url'] = _PS_BASE_URL_SSL_;
         $ps['base_uri'] = __PS_BASE_URI__;
 
         return $ps;
