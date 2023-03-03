@@ -1,8 +1,10 @@
 release:
-  image: php:8
+  image: ubuntu
   only:
     - tags
   script:
+    - apt-get update -y
+    - apt-get install make zip -y
     - make pack
   artifacts:
     untracked: false
