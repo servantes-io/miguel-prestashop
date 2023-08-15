@@ -8,7 +8,7 @@ outputFile="$currentdir/$1"
 
 rm -rf "$outputFile"
 
-cp -R . "$tempdir/miguel"
+cp -R src "$tempdir/miguel"
 
 pushd "$tempdir" > /dev/null
     zip -r "$outputFile" . --include "*.php" "*.png" "*.jpg" "*.md" "*.tpl" "*.js" "*.css"
