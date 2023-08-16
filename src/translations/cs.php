@@ -1,7 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = [];
+$_MODULE = array();
 $_MODULE['<{miguel}prestashop>miguel_651faef175451b43088ed6fab4aab961'] = 'Miguel';
 $_MODULE['<{miguel}prestashop>miguel_47ccafd7f62b43de217b7866dbc7fece'] = 'Umožňuje prodávat knihy přes službu Miguel.';
 $_MODULE['<{miguel}prestashop>miguel_5cd39b58be925b2e5e4166b243c6e6f0'] = 'Opravdu chcete odebrat doplněk?';
@@ -15,12 +15,12 @@ $_MODULE['<{miguel}prestashop>miguel_90589c47f06eb971d548591f23c285af'] = 'Vlast
 $_MODULE['<{miguel}prestashop>miguel_7d458c96c1c4ea594abf0cf40e2d5391'] = 'Vlastní adresa Miguel serveru';
 $_MODULE['<{miguel}prestashop>miguel_aa8d595aa3ed938dadbcb20728ee2e23'] = 'Adresa bude použita, pokud jste si zvolili vlastní produkční prostředí.';
 $_MODULE['<{miguel}prestashop>miguel_4683ec4ce0841daa5e897d44b058e58e'] = 'Pro získání adresy nás kontaktujte.';
-$_MODULE['<{miguel}prestashop>miguel_da8682b145d4b8e742820ae12afe4e24'] = 'API klíč pro server - Produkce';
+$_MODULE['<{miguel}prestashop>miguel_656a6828d7ef1bb791e42087c4b5ee6e'] = 'API klíč';
 $_MODULE['<{miguel}prestashop>miguel_0f8c933f92d75d023c717ccee54d2925'] = 'Pro získání API klíče použijte odkaz z Dokumentace.';
 $_MODULE['<{miguel}prestashop>miguel_0e9b35efdc40dfdbcd362d514158055c'] = 'Pomocí API klíče bude váš e-shop bezpečně komunikovat s naším serverem.';
-$_MODULE['<{miguel}prestashop>miguel_5c0f140055856e4651e36cf85f5b3aae'] = 'API klíč pro server - Staging';
-$_MODULE['<{miguel}prestashop>miguel_202bbb7f967055ae755a222669423fcc'] = 'API klíč pro server - Test';
-$_MODULE['<{miguel}prestashop>miguel_8c4b88596d840fd662deeb04a4f1f566'] = 'API klíč pro server - Vlastní';
+$_MODULE['<{miguel}prestashop>miguel_73cdc32fcb3d52074aea04e4e40029e6'] = 'API klíč - Staging';
+$_MODULE['<{miguel}prestashop>miguel_874064783171f53adbdeae5986ec88e6'] = 'API klíč - Test';
+$_MODULE['<{miguel}prestashop>miguel_03b5efa3cdbcf14921806e4518b3a96a'] = 'API klíč - Vlastní';
 $_MODULE['<{miguel}prestashop>miguel_beeddb9ee117e92aa4952ea41370d134'] = 'Automatické přepnutí stavu objednávky';
 $_MODULE['<{miguel}prestashop>miguel_d2ca6b1e0c94dabb52e9a831b7c155e2'] = 'Uživatel zakoupil pouze knihy od Miguela';
 $_MODULE['<{miguel}prestashop>miguel_22129fe20767ae5ed861a58889629622'] = 'Nastavte, pokud chcete automaticky změnit stav po dokončení objednávky.';
@@ -44,9 +44,7 @@ $_MODULE['<{miguel}prestashop>configure_d9196118569c0de617bcc79cfd019393'] = 'Ka
 $_MODULE['<{miguel}prestashop>configure_f6a693b041a6df708d4d4a1879b49b2d'] = 'Přečtětě si více o Miguelovi.';
 $_MODULE['<{miguel}prestashop>configure_5b6cf869265c13af8566f192b4ab3d2a'] = 'Dokumentace';
 $_MODULE['<{miguel}prestashop>configure_78c7f310b5f9c9ced5fcf9049f743c01'] = 'Prozkoumejte následující informace pro nastavení modulu';
-$_MODULE['<{miguel}prestashop>configure_1b29030b0e9ea2249ba99c8b993d379d'] = 'Získat API klíč pro server - Produkce';
-$_MODULE['<{miguel}prestashop>configure_194c1bdadf5efb77a78afff3df24e424'] = 'Získat API klíč pro server - Staging';
-$_MODULE['<{miguel}prestashop>configure_5440c3ceb9c26c1c3f18dde528c9a9f8'] = 'Získat API klíč pro server - Test';
+$_MODULE['<{miguel}prestashop>configure_4c86cf2a0301ecc7a1271b552bceee6b'] = 'Získat API klíč';
 $_MODULE['<{miguel}prestashop>purchased_dbe2cb144a530669ff4fc042578b3964'] = 'Zde jsou všechny e-knihy, které jste si zakoupili pod tímto zákaznickým účtem.';
 $_MODULE['<{miguel}prestashop>purchased_a35c7ed28e585333ad809b73007fcf2d'] = 'Název knihy';
 $_MODULE['<{miguel}prestashop>purchased_1e860e56970a81a1ba3e1fcb7fccc846'] = 'Označení objednávky';

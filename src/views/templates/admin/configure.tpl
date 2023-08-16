@@ -9,7 +9,7 @@
 *
 *  @author Pavel Vejnar <vejnar.p@gmail.com>
 *  @copyright  2022 - 2023 Servantes
-*  @license LICENSE.txt 
+*  @license LICENSE.txt
 *}
 
 {if $alert_state eq 'info_setup_module'}
@@ -47,9 +47,7 @@
 		&raquo; {l s='Explore the following information to set up the module' mod='miguel'} :
 		<ul>
 			<li><a href="https://docs.miguel.servantes.cz" target="_blank">{l s='Documentation' mod='miguel'}</a></li>
-			<li><a href="https://app.servantes.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Production' mod='miguel'}</a></li>
-			<li><a href="https://staging-env.servantes.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Staging' mod='miguel'}</a></li>
-			<li><a href="https://columbo-test.neatech.cz/miguel/settings" target="_blank">{l s='Get the API key for the server - Test' mod='miguel'}</a></li>
+			<li><a href="https://app.servantes.cz/miguel/settings" target="_blank">{l s='Get API key' mod='miguel'}</a></li>
 		</ul>
 	</p>
 </div>

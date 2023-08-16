@@ -37,6 +37,7 @@ class Miguel extends Module
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
+        $this->module_key = '713c24e9747f0c1fdb078e247f53cc14';
 
         parent::__construct();
 
@@ -168,7 +169,7 @@ class Miguel extends Module
     /**
      * Create the structure of your form.
      */
-    protected function getConfigForm()
+    protected function getConfigForm($show_environments = false)
     {
         return [
             'form' => [
@@ -176,8 +177,8 @@ class Miguel extends Module
                 'title' => $this->l('Settings'),
                 'icon' => 'icon-cogs',
                 ],
-                'input' => [
-                    [
+                'input' => array_filter([
+                    $show_environments ? [
                         'type' => 'select',
                         'label' => $this->l('Miguel server environment'),
                         'name' => 'API_SERVER',
@@ -193,8 +194,8 @@ class Miguel extends Module
                             'id' => 'id',
                             'name' => 'name',
                         ],
-                    ],
-                    [
+                    ] : false,
+                    $show_environments ? [
                         'type' => 'text',
                         'label' => $this->l('Miguel server\'s custom address'),
                         'name' => 'API_SERVER_OWN',
@@ -203,18 +204,18 @@ class Miguel extends Module
                         'default_value' => '',
                         'hint' => $this->l('Contact us to get the address.'),
                         'visible' => false,
-                    ],
+                    ] : false,
                     [
                         'type' => 'text',
-                        'label' => $this->l('API key for server - Production'),
+                        'label' => $this->l('API key'),
                         'name' => 'API_TOKEN_PRODUCTION',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER', true) != 'production')?('input_server_production'):('')),
+                        'class' => ((Configuration::get('API_SERVER', true) != 'production')?('input_server_production'):('')),
                     ],
                     [
                         'type' => 'text',
-                        'label' => $this->l('API key for server - Staging'),
+                        'label' => $this->l('API key - Staging'),
                         'name' => 'API_TOKEN_STAGING',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
@@ -222,7 +223,7 @@ class Miguel extends Module
                     ],
                     [
                         'type' => 'text',
-                        'label' => $this->l('API key for server - Test'),
+                        'label' => $this->l('API key - Test'),
                         'name' => 'API_TOKEN_TEST',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
@@ -230,7 +231,7 @@ class Miguel extends Module
                     ],
                     [
                         'type' => 'text',
-                        'label' => $this->l('API key for server - Custom'),
+                        'label' => $this->l('API key - Custom'),
                         'name' => 'API_TOKEN_OWN',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
@@ -276,7 +277,7 @@ class Miguel extends Module
                             ],
                         ],
                     ],
-                ],
+                ]),
                 'submit' => [
                     'title' => $this->l('Save'),
                 ],
