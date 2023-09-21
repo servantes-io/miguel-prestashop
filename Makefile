@@ -1,2 +1,2 @@
 pack:
-	bin/pack.sh miguel-$${CI_COMMIT_TAG:=dev}.zip
+	zip -r "miguel-$${CI_COMMIT_TAG:=dev}.zip" miguel --exclude ".DS_Store"
