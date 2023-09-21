@@ -1,6 +1,6 @@
 # Miguel for Prestashop
 
-Prestashop module to sell watermarked ebooks and audiobooks.
+Prestashop module to sell watermarked ebooks and audiobooks through [Miguel](https://servantes.cz/en/miguel) by [Servantes](https://servantes.cz/en/).
 
 ## Installation
 
@@ -21,8 +21,6 @@ A dialog will appear in which you insert the [downloaded module](https://github.
 Once installed, you should see a confirmation message that the module is installed. Click on **Configure**:
 
 ![](doc/img/install/step_3.png)
-
-The next step is described in the section: [Settings](../settings).
 
 
 ## Settings
@@ -62,3 +60,28 @@ Turn Miguel on by toggling **Enable Miguel** and click **Save** on the bottom ri
 And you’re done.
 
 Now the module should be connected to Miguel, all that's left is to create products and sell them.
+
+## Information about the module
+
+### Supported versions
+- PrestaShop 1.7.x.
+- If you have problems using the module, please contact us at [support@servantes.io](mailto:support@servantes.io).
+
+### Provided functions
+- automatic mail delivery with download links
+- supported standard ebook formats EPUB, MOBI and PDF
+- supported audiobooks in MP3 format
+
+### Supported languages:
+- czech
+- english
+
+### PHP compatibility
+
+| Module version | Branch   | PHP version |
+|----------------|----------|-------------|
+| `>= 1.0.0`     | `main`   | 5.6 - 8.2   | 
+
+### Further module limitations
+
+- Module does not currently support multistore.
