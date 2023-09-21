@@ -25,8 +25,7 @@ Once installed, you should see a confirmation message that the module is install
 
 ## Settings
 
-In order for the module to communicate with Miguel's servers, it must be connected. This means creating an API key and inserting it into the module settings. You can find the settings in the administration of your e-shop under **Modules
-** > **Module manager** and then at the **Miguel** module click **Configure**.
+In order for the module to communicate with Miguel's servers, it must be connected. This means creating an API key and inserting it into the module settings. You can find the settings in the administration of your e-shop under **Modules** > **Module manager** and then at the **Miguel** module click **Configure**.
 
 ![](doc/img/settings/modules_configure.png)
 
