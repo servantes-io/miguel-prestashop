@@ -1,4 +1,6 @@
 {
+    "author": "Servantes",
+    "license": "MIT",
     "require-dev": {
         "prestashop/php-dev-tools": "^4.3",
         "phpunit/phpunit": "^9"

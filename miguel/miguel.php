@@ -1,6 +1,6 @@
 <?php
 /**
-* 2023 Servantes.
+* 2023 Servantes
 *
 * This file is licenced under the Software License Agreement.
 * With the purchase or the installation of the software in your application
@@ -211,7 +211,7 @@ class Miguel extends Module
                         'name' => 'API_TOKEN_PRODUCTION',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => ((Configuration::get('API_SERVER', true) != 'production')?('input_server_production'):('')),
+                        'class' => ((Configuration::get('API_SERVER', true) != 'production') ? ('input_server_production') : ('')),
                     ],
                     [
                         'type' => 'text',
@@ -461,7 +461,7 @@ class Miguel extends Module
     }
 
     /**
-     * @param String $uri
+     * @param string $uri
      */
     public function curlGet($uri)
     {
@@ -511,7 +511,7 @@ class Miguel extends Module
     }
 
     /**
-     * @param String $uri
+     * @param string $uri
      * @param Array<string, string> $params
      */
     public function curlPost($uri, array $params)
@@ -840,7 +840,7 @@ class Miguel extends Module
 
     /**
      * @param Integer|false $lang_id
-     * @return String
+     * @return string
      */
     private function getLanguageCode($lang_id = false)
     {
