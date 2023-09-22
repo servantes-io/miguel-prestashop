@@ -18,6 +18,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once 'utils/miguel-settings.php';
+
 class Miguel extends Module
 {
     public const HOOKS = [
@@ -33,7 +35,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.0.1';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -54,16 +56,7 @@ class Miguel extends Module
 
     public function install()
     {
-        Configuration::updateValue('API_TOKEN_PRODUCTION', '');
-        Configuration::updateValue('API_TOKEN_STAGING', '');
-        Configuration::updateValue('API_TOKEN_TEST', '');
-        Configuration::updateValue('API_TOKEN_OWN', '');
-        Configuration::updateValue('API_SERVER', 'API_TOKEN_PRODUCTION'); // výchozí volba serveru po instalaci modulu
-        Configuration::updateValue('API_SERVER_OWN', '');
-        Configuration::updateValue('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY', 0);
-        Configuration::updateValue('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS', 0);
-        Configuration::updateValue('API_ENABLE', false);
-        Configuration::updateValue('API_ENABLE', false);
+        MiguelSettings::reset();
 
         include dirname(__FILE__) . '/sql/install.php';
 
@@ -73,15 +66,7 @@ class Miguel extends Module
 
     public function uninstall()
     {
-        Configuration::deleteByName('API_TOKEN_PRODUCTION');
-        Configuration::deleteByName('API_TOKEN_STAGING');
-        Configuration::deleteByName('API_TOKEN_TEST');
-        Configuration::deleteByName('API_TOKEN_OWN');
-        Configuration::deleteByName('API_SERVER');
-        Configuration::deleteByName('API_SERVER_OWN');
-        Configuration::deleteByName('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY');
-        Configuration::deleteByName('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS');
-        Configuration::deleteByName('API_ENABLE');
+        MiguelSettings::deleteAll();
 
         include dirname(__FILE__) . '/sql/uninstall.php';
 
@@ -109,8 +94,8 @@ class Miguel extends Module
         $alert_state = 'info_setup_module';
         $api_configuration = $this->getCurrentApiConfiguration();
         if (false == $api_configuration) { // není vložena url nebo token, tak nemohu aktivovat
-            if ($this->getApiEnable()) {
-                Configuration::updateValue('API_ENABLE', false);
+            if (MiguelSettings::getEnabled()) {
+                MiguelSettings::setEnabled(false);
                 $alert_state = 'info_setup_module_first';
             } else {
                 $alert_state = 'info_setup_module';
@@ -119,7 +104,8 @@ class Miguel extends Module
             $test_key = $this->curlPost('/v1/prestashop/connect', $this->getPrestashopDetails());
             if (false == $test_key) {
                 $alert_state = 'warning_api_fail';
-                Configuration::updateValue('API_ENABLE', false); // pokud se nepodaří přihlásit, tak deaktivuji API
+                // pokud se nepodaří přihlásit, tak deaktivuji API
+                MiguelSettings::setEnabled(false);
             } else {
                 $alert_state = 'success_api_ok';
             }
@@ -181,15 +167,15 @@ class Miguel extends Module
                     $show_environments ? [
                         'type' => 'select',
                         'label' => $this->l('Miguel server environment'),
-                        'name' => 'API_SERVER',
+                        'name' => MiguelSettings::API_SERVER_KEY,
                         'desc' => $this->l('For normal operation, choose the production.'),
-                        'default_value' => 'API_TOKEN_PRODUCTION',
+                        'default_value' => MiguelSettings::ENV_PROD,
                         'options' => [
                             'query' => [
-                                ['id' => 'API_TOKEN_PRODUCTION', 'name' => $this->l('Production')],
-                                ['id' => 'API_TOKEN_STAGING', 'name' => $this->l('Staging')],
-                                ['id' => 'API_TOKEN_TEST', 'name' => $this->l('Test')],
-                                ['id' => 'API_TOKEN_OWN', 'name' => $this->l('Custom')],
+                                ['id' => MiguelSettings::ENV_PROD, 'name' => $this->l('Production')],
+                                ['id' => MiguelSettings::ENV_STAGING, 'name' => $this->l('Staging')],
+                                ['id' => MiguelSettings::ENV_TEST, 'name' => $this->l('Test')],
+                                ['id' => MiguelSettings::ENV_OWN, 'name' => $this->l('Custom')],
                             ],
                             'id' => 'id',
                             'name' => 'name',
@@ -198,9 +184,9 @@ class Miguel extends Module
                     $show_environments ? [
                         'type' => 'text',
                         'label' => $this->l('Miguel server\'s custom address'),
-                        'name' => 'API_SERVER_OWN',
+                        'name' => MiguelSettings::API_SERVER_OWN_KEY,
                         'desc' => $this->l('The address will be used if you have chosen a custom production environment.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'own')?('input_server_own'):('')),
+                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_OWN) ? ('input_server_own') : ('')),
                         'default_value' => '',
                         'hint' => $this->l('Contact us to get the address.'),
                         'visible' => false,
@@ -208,39 +194,39 @@ class Miguel extends Module
                     [
                         'type' => 'text',
                         'label' => $this->l('API key'),
-                        'name' => 'API_TOKEN_PRODUCTION',
+                        'name' => MiguelSettings::API_TOKEN_PRODUCTION_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => ((Configuration::get('API_SERVER') != 'production') ? ('input_server_production') : ('')),
+                        'class' => ((MiguelSettings::getServer() != MiguelSettings::ENV_PROD) ? ('input_server_production') : ('')),
                     ],
                     [
                         'type' => 'text',
                         'label' => $this->l('API key - Staging'),
-                        'name' => 'API_TOKEN_STAGING',
+                        'name' => MiguelSettings::API_TOKEN_STAGING_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'staging')?('input_server_staging'):('')),
+                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_STAGING) ? ('input_server_staging') : ('')),
                     ],
                     [
                         'type' => 'text',
                         'label' => $this->l('API key - Test'),
-                        'name' => 'API_TOKEN_TEST',
+                        'name' => MiguelSettings::API_TOKEN_TEST_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'test')?('input_server_test'):('')),
+                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_TEST) ? ('input_server_test') : ('')),
                     ],
                     [
                         'type' => 'text',
                         'label' => $this->l('API key - Custom'),
-                        'name' => 'API_TOKEN_OWN',
+                        'name' => MiguelSettings::API_TOKEN_OWN_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'own')?('input_server_own'):('')),
+                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_OWN) ? ('input_server_own') : ('')),
                     ],
                     [
                         'type' => 'select',
                         'label' => $this->l('Automatic order status change') . '<br>' . $this->l('The user has only purchased books from Miguel'),
-                        'name' => 'NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY',
+                        'name' => MiguelSettings::NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY,
                         'desc' => $this->l('Set if you want to automatically change the status after the order is completed.'),
                         'default_value' => 'NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY',
                         'options' => [
@@ -252,7 +238,7 @@ class Miguel extends Module
                     [
                         'type' => 'select',
                         'label' => $this->l('Automatic order status change') . '<br>' . $this->l('User has purchased books from Miguel and other products'),
-                        'name' => 'NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS',
+                        'name' => MiguelSettings::NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY,
                         'desc' => $this->l('Set if you want to automatically change the status after the order is completed.'),
                         'default_value' => 'NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS',
                         'options' => [
@@ -264,7 +250,7 @@ class Miguel extends Module
                     [
                         'type' => 'switch',
                         'label' => $this->l('Enable Miguel add-on'),
-                        'name' => 'API_ENABLE',
+                        'name' => MiguelSettings::API_ENABLE_KEY,
                         'desc' => '',
                         'values' => [
                             [
@@ -312,17 +298,7 @@ class Miguel extends Module
      */
     protected function getConfigFormValues()
     {
-        return [
-            'API_TOKEN_PRODUCTION' => Configuration::get('API_TOKEN_PRODUCTION'),
-            'API_TOKEN_STAGING' => Configuration::get('API_TOKEN_STAGING'),
-            'API_TOKEN_TEST' => Configuration::get('API_TOKEN_TEST'),
-            'API_TOKEN_OWN' => Configuration::get('API_TOKEN_OWN'),
-            'API_SERVER' => Configuration::get('API_SERVER'),
-            'API_SERVER_OWN' => Configuration::get('API_SERVER_OWN'),
-            'NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY'),
-            'NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS'),
-            'API_ENABLE' => Configuration::get('API_ENABLE'),
-        ];
+        return MiguelSettings::getAll();
     }
 
     /**
@@ -333,7 +309,7 @@ class Miguel extends Module
         $form_values = $this->getConfigFormValues();
 
         foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+            MiguelSettings::save($key, Tools::getValue($key));
         }
     }
 
@@ -452,7 +428,7 @@ class Miguel extends Module
 
     public function hookActionOrderStatusUpdate($params)
     {
-        if (false == Configuration::get('API_ENABLE')) {
+        if (false == MiguelSettings::getEnabled()) {
             return;
         } // ověření, že je api povoleno
 
@@ -564,34 +540,14 @@ class Miguel extends Module
 
     public function getCurrentApiConfiguration()
     {
-        $api_server = Configuration::get('API_SERVER');
-        $url = '';
-        $token = '';
-        switch ($api_server) {
-            case 'API_TOKEN_PRODUCTION':
-                $url = 'https://miguel.servantes.cz';
-                $token = Configuration::get('API_TOKEN_PRODUCTION');
-                break;
-            case 'API_TOKEN_STAGING':
-                $url = 'https://miguel-staging.servantes.cz';
-                $token = Configuration::get('API_TOKEN_STAGING');
-                break;
-            case 'API_TOKEN_TEST':
-                $url = 'https://miguel-test.servantes.cz';
-                $token = Configuration::get('API_TOKEN_TEST');
-                break;
-            case 'API_TOKEN_OWN':
-                $url = Configuration::get('API_SERVER_OWN');
-                $token = Configuration::get('API_TOKEN_OWN');
-                break;
-            default:
-                break;
-        }
+        $api_server = MiguelSettings::getServer();
+        $url = MiguelSettings::getServerUrl($api_server);
+        $token = MiguelSettings::getServerToken($api_server);
 
         $configuration = [
             'url' => $url,
             'token' => $token,
-            'api_enable' => Configuration::get('API_ENABLE'),
+            'api_enable' => MiguelSettings::getEnabled(),
         ];
 
         if ('' == $url || '' == $token) {
@@ -610,11 +566,6 @@ class Miguel extends Module
         $ps['base_uri'] = __PS_BASE_URI__;
 
         return $ps;
-    }
-
-    private static function getApiEnable()
-    {
-        return Configuration::get('API_ENABLE');
     }
 
     public function getAllProducts()
@@ -693,13 +644,8 @@ class Miguel extends Module
             } // našel jsem apoň jednu položku, která není od Miguela
         }
 
-        $new_state_id = 0;
-        if ($miguel_only) {
-            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY');
-        } else {
-            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS');
-        }
-        if (0 == $new_state_id) {
+        $new_state_id = MiguelSettings::getNewStateAutoChange($miguel_only);
+        if (false == $new_state_id) {
             return 'auto change not set';
         }
 
@@ -707,7 +653,6 @@ class Miguel extends Module
         $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
-        // $this->logger->logDebug($request);
         if (count($result) < 1) {
             return 'unknown order id';
         }

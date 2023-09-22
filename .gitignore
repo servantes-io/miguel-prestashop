@@ -175,3 +175,4 @@ themes/default-bootstrap/modules/*/mails/*
 /run
 /*.zip
 .php-cs-fixer.cache
+miguel/config.xml
