@@ -200,7 +200,7 @@ class Miguel extends Module
                         'label' => $this->l('Miguel server\'s custom address'),
                         'name' => 'API_SERVER_OWN',
                         'desc' => $this->l('The address will be used if you have chosen a custom production environment.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER', true) != 'own')?('input_server_own'):('')),
+                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'own')?('input_server_own'):('')),
                         'default_value' => '',
                         'hint' => $this->l('Contact us to get the address.'),
                         'visible' => false,
@@ -211,7 +211,7 @@ class Miguel extends Module
                         'name' => 'API_TOKEN_PRODUCTION',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => ((Configuration::get('API_SERVER', true) != 'production') ? ('input_server_production') : ('')),
+                        'class' => ((Configuration::get('API_SERVER') != 'production') ? ('input_server_production') : ('')),
                     ],
                     [
                         'type' => 'text',
@@ -219,7 +219,7 @@ class Miguel extends Module
                         'name' => 'API_TOKEN_STAGING',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER', true) != 'staging')?('input_server_staging'):('')),
+                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'staging')?('input_server_staging'):('')),
                     ],
                     [
                         'type' => 'text',
@@ -227,7 +227,7 @@ class Miguel extends Module
                         'name' => 'API_TOKEN_TEST',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER', true) != 'test')?('input_server_test'):('')),
+                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'test')?('input_server_test'):('')),
                     ],
                     [
                         'type' => 'text',
@@ -235,7 +235,7 @@ class Miguel extends Module
                         'name' => 'API_TOKEN_OWN',
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((Configuration::get('API_SERVER', true) != 'own')?('input_server_own'):('')),
+                        'class' => 'input_server', // ((Configuration::get('API_SERVER') != 'own')?('input_server_own'):('')),
                     ],
                     [
                         'type' => 'select',
@@ -313,15 +313,15 @@ class Miguel extends Module
     protected function getConfigFormValues()
     {
         return [
-            'API_TOKEN_PRODUCTION' => Configuration::get('API_TOKEN_PRODUCTION', true),
-            'API_TOKEN_STAGING' => Configuration::get('API_TOKEN_STAGING', true),
-            'API_TOKEN_TEST' => Configuration::get('API_TOKEN_TEST', true),
-            'API_TOKEN_OWN' => Configuration::get('API_TOKEN_OWN', true),
-            'API_SERVER' => Configuration::get('API_SERVER', true),
-            'API_SERVER_OWN' => Configuration::get('API_SERVER_OWN', true),
-            'NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY', true),
-            'NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS', true),
-            'API_ENABLE' => Configuration::get('API_ENABLE', true),
+            'API_TOKEN_PRODUCTION' => Configuration::get('API_TOKEN_PRODUCTION'),
+            'API_TOKEN_STAGING' => Configuration::get('API_TOKEN_STAGING'),
+            'API_TOKEN_TEST' => Configuration::get('API_TOKEN_TEST'),
+            'API_TOKEN_OWN' => Configuration::get('API_TOKEN_OWN'),
+            'API_SERVER' => Configuration::get('API_SERVER'),
+            'API_SERVER_OWN' => Configuration::get('API_SERVER_OWN'),
+            'NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY'),
+            'NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS' => Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS'),
+            'API_ENABLE' => Configuration::get('API_ENABLE'),
         ];
     }
 
@@ -452,7 +452,7 @@ class Miguel extends Module
 
     public function hookActionOrderStatusUpdate($params)
     {
-        if (false == Configuration::get('API_ENABLE', true)) {
+        if (false == Configuration::get('API_ENABLE')) {
             return;
         } // ověření, že je api povoleno
 
@@ -555,12 +555,8 @@ class Miguel extends Module
 
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-        switch ($http_status) {
-            case 200:
-                return (strlen($response) < 1) ? (true) : ($response);
-            case 401: // nevalidní API klíč
-            default:
-                return false;
+        if ($http_status >= 200 && $http_status < 300) {
+            return (strlen($response) < 1) ? (true) : ($response);
         }
 
         return false;
@@ -568,25 +564,25 @@ class Miguel extends Module
 
     public function getCurrentApiConfiguration()
     {
-        $api_server = Configuration::get('API_SERVER', true);
+        $api_server = Configuration::get('API_SERVER');
         $url = '';
         $token = '';
         switch ($api_server) {
             case 'API_TOKEN_PRODUCTION':
                 $url = 'https://miguel.servantes.cz';
-                $token = Configuration::get('API_TOKEN_PRODUCTION', true);
+                $token = Configuration::get('API_TOKEN_PRODUCTION');
                 break;
             case 'API_TOKEN_STAGING':
                 $url = 'https://miguel-staging.servantes.cz';
-                $token = Configuration::get('API_TOKEN_STAGING', true);
+                $token = Configuration::get('API_TOKEN_STAGING');
                 break;
             case 'API_TOKEN_TEST':
                 $url = 'https://miguel-test.servantes.cz';
-                $token = Configuration::get('API_TOKEN_TEST', true);
+                $token = Configuration::get('API_TOKEN_TEST');
                 break;
             case 'API_TOKEN_OWN':
-                $url = Configuration::get('API_SERVER_OWN', true);
-                $token = Configuration::get('API_TOKEN_OWN', true);
+                $url = Configuration::get('API_SERVER_OWN');
+                $token = Configuration::get('API_TOKEN_OWN');
                 break;
             default:
                 break;
@@ -595,7 +591,7 @@ class Miguel extends Module
         $configuration = [
             'url' => $url,
             'token' => $token,
-            'api_enable' => Configuration::get('API_ENABLE', true),
+            'api_enable' => Configuration::get('API_ENABLE'),
         ];
 
         if ('' == $url || '' == $token) {
@@ -610,7 +606,7 @@ class Miguel extends Module
         $ps = [];
         $ps['ps_version'] = _PS_VERSION_;
         $ps['module_version'] = $this->version;
-        $ps['base_url'] = _PS_BASE_URL_SSL_;
+        $ps['base_url'] = Tools::getShopDomainSsl(true);
         $ps['base_uri'] = __PS_BASE_URI__;
 
         return $ps;
@@ -618,7 +614,7 @@ class Miguel extends Module
 
     private static function getApiEnable()
     {
-        return Configuration::get('API_ENABLE', true);
+        return Configuration::get('API_ENABLE');
     }
 
     public function getAllProducts()
@@ -652,7 +648,7 @@ class Miguel extends Module
         $date_upd = date('Y-m-d H:i:s', strtotime($updated_since));
 
         $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `date_upd` >= "' . $date_upd . '"';
-        $db = Db::getInstance(_PS_USE_SQL_SLAVE_);
+        $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
         $updated_orders = [];
@@ -699,16 +695,16 @@ class Miguel extends Module
 
         $new_state_id = 0;
         if ($miguel_only) {
-            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY', true);
+            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY');
         } else {
-            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS', true);
+            $new_state_id = Configuration::get('NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS');
         }
         if (0 == $new_state_id) {
             return 'auto change not set';
         }
 
         $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `reference` = "' . $order_code . '"';
-        $db = Db::getInstance(_PS_USE_SQL_SLAVE_);
+        $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
         // $this->logger->logDebug($request);
@@ -841,7 +837,7 @@ class Miguel extends Module
     /**
      * @param int|false $lang_id
      *
-     * @return string
+     * @return string|false
      */
     private function getLanguageCode($lang_id = false)
     {
@@ -855,7 +851,7 @@ class Miguel extends Module
                 $this->logger->logDebug('getLanguageCode: Cannot create new Language: ' . $lang_id);
             }
 
-            return;
+            return false;
         }
 
         return $language->iso_code;
