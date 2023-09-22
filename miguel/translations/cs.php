@@ -14,7 +14,7 @@
 */
 
 global $_MODULE;
-$_MODULE = array();
+$_MODULE = [];
 $_MODULE['<{miguel}prestashop>miguel_651faef175451b43088ed6fab4aab961'] = 'Miguel';
 $_MODULE['<{miguel}prestashop>miguel_47ccafd7f62b43de217b7866dbc7fece'] = 'Umožňuje prodávat knihy přes službu Miguel.';
 $_MODULE['<{miguel}prestashop>miguel_5cd39b58be925b2e5e4166b243c6e6f0'] = 'Opravdu chcete odebrat doplněk?';

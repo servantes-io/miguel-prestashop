@@ -45,7 +45,7 @@
                   {$product_count = count($book.product.formats)}
                   {if $product_count > 0}
                     {foreach from=$book.product.formats key=k item=format}
-                      <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if} 
+                      <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if}
                     {/foreach}
                   {else}
                     <th>{l s='The books are being prepared' mod='miguel'}</th>
@@ -71,9 +71,9 @@
                   {if $book.paid}
                     {$product_count = count($book.product.formats)}
                     {if $product_count > 0}
-                      {l s='Download' mod='miguel'}: 
+                      {l s='Download' mod='miguel'}:
                       {foreach from=$book.product.formats key=k item=format}
-                        <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if} 
+                        <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if}
                       {/foreach}
                     {else}
                       <th>{l s='The books are being prepared' mod='miguel'}</th>
@@ -93,14 +93,3 @@
     </div>
   </section>
 {/block}
-
-
-
-
-
-
-
-
-
-
-

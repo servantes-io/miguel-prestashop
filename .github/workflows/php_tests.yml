@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, edited]
 
+permissions:
+  checks: write
+
 jobs:
   header-stamp:
     name: Check license headers
@@ -51,8 +54,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run PHP-CS-Fixer
-        uses: prestashopcorp/github-action-php-cs-fixer@master
+
+      - name: Cache vendor folder
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: php-${{ hashFiles('composer.lock') }}
+
+      - name: Cache composer folder
+        uses: actions/cache@v3
+        with:
+          path: ~/.composer/cache
+          key: php-composer-cache
+
+      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
+
+      - name: Run PHP CS Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+
   phpstan:
     name: PHPStan
     runs-on: ubuntu-latest
@@ -75,7 +94,7 @@ jobs:
           path: ~/.composer/cache
           key: php-composer-cache
 
-      - run: composer install
+      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
       - name: Pull PrestaShop files (Tag ${{ matrix.presta-versions }})
         run: docker run -tid --rm -v ps-volume:/var/www/html --name temp-ps prestashop/prestashop:${{ matrix.presta-versions }}
@@ -101,7 +120,7 @@ jobs:
           path: ~/.composer/cache
           key: php-composer-cache
 
-      - run: composer install
+      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
       - name: Run PHPUnit
         run: php vendor/bin/phpunit tests/Unit
