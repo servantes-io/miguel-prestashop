@@ -174,3 +174,4 @@ themes/default-bootstrap/modules/*/mails/*
 # Custom rules
 /run
 /*.zip
+.php-cs-fixer.cache
