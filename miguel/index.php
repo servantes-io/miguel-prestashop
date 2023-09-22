@@ -8,7 +8,6 @@
  *
  * You must not modify, adapt or create derivative works of this source code
  *
- * @package   Miguel
  * @author    Pavel Vejnar <vejnar.p@gmail.com>
  * @copyright 2022 - 2023 Servantes
  * @license   https://opensource.org/licenses/MIT MIT License
