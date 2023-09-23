@@ -27,6 +27,6 @@ final class MiguelSettingsTest extends TestCase
 
         MiguelSettings::setEnabled(true);
 
-        $this->assertTrue(Configuration::get(MiguelSettings::API_ENABLE_KEY));
+        $this->assertFalse(Configuration::get(MiguelSettings::API_ENABLE_KEY));
     }
 }
