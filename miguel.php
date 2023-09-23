@@ -18,7 +18,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once 'utils/miguel-settings.php';
+require_once 'src/utils/miguel-settings.php';
 
 class Miguel extends Module
 {
@@ -58,7 +58,7 @@ class Miguel extends Module
     {
         MiguelSettings::reset();
 
-        include dirname(__FILE__) . '/sql/install.php';
+        include dirname(__FILE__) . '/src/sql/install.php';
 
         return parent::install()
             && $this->registerHook(static::HOOKS);
@@ -68,7 +68,7 @@ class Miguel extends Module
     {
         MiguelSettings::deleteAll();
 
-        include dirname(__FILE__) . '/sql/uninstall.php';
+        include dirname(__FILE__) . '/src/sql/uninstall.php';
 
         return parent::uninstall();
     }

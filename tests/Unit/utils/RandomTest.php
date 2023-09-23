@@ -17,16 +17,10 @@ namespace Tests\Unit\utils;
 
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
-
-final class MiguelSettingsTest extends TestCase
+final class RandomTest extends TestCase
 {
     public function testSaveValue()
     {
-        $this->assertFalse(Configuration::get(MiguelSettings::API_ENABLE_KEY));
-
-        MiguelSettings::setEnabled(true);
-
-        $this->assertFalse(Configuration::get(MiguelSettings::API_ENABLE_KEY));
+        $this->assertFalse(true);
     }
 }

@@ -4,7 +4,15 @@ includes:
 parameters:
 	paths:
 		# From PHPStan 0.12, paths to check are relative to the neon file
-		- ../../miguel
+		- ../../controllers
+		- ../../src
+		- ../../translations
+		- ../../upgrade
+		- ../../views
+		- ../../miguel.php
+		- ../../order-state-callback.php
+		- ../../orders.php
+		- ../../products.php
 	reportUnmatchedIgnoredErrors: false
 
 	level: 5

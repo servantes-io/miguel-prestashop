@@ -12,10 +12,12 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
+
     - name: Package
-      run: zip -r "miguel-${GITHUB_REF_NAME}.zip" miguel
+      run: make build-zip
+
     - uses: ncipollo/release-action@v1
       with:
         draft: true
         generateReleaseNotes: true
-        artifacts: "miguel*.zip"
+        artifacts: "miguel.zip"

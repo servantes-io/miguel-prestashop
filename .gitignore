@@ -130,8 +130,6 @@ php-cs-fixer
 .grunt/*
 
 # Translations and emails templates
-
-translations/*
 mails/*
 !mails/themes/
 !mails/_partials/

@@ -1,3 +1,6 @@
+build-zip:
+	bash .github/scripts/build-zip.sh
+
 phpunit:
 	docker pull prestashop/docker-internal-images:nightly
 	@docker run --rm \
@@ -7,7 +10,7 @@ phpunit:
 		-e PS_DEV_MODE=1 \
 		-e XDEBUG_MODE=coverage \
 		-e XDEBUG_ENABLED=1 \
-		-v ${PWD}/miguel:/var/www/html/modules/miguel \
+		-v ${PWD}:/var/www/html/modules/miguel \
 		-w /var/www/html/modules/miguel \
 		prestashop/docker-internal-images:nightly \
 		sh -c " \
