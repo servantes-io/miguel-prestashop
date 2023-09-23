@@ -7,17 +7,28 @@ if [ ! -d vendor2/PrestaShop ]; then
         git clone --depth 1 --branch $PRESTASHOP_VERSION https://github.com/PrestaShop/PrestaShop
 
         pushd PrestaShop > /dev/null
-            # install prestashop
+            # install deps
             composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
-            sed -i "s/mysql -u root/mysql -u root --password=password --port ${MYSQL_PORT}/g" travis-scripts/install-prestashop
-			sed -i "s/--db_server=127.0.0.1 --db_name=prestashop/--db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password/g" travis-scripts/install-prestashop
+            # Clean up needed for StarterTheme tests
+            mysql -u root --password=password --port ${MYSQL_PORT} -e "DROP DATABASE IF EXISTS \`prestashop\`;"
 
-            echo "new version of travis-scripts/install-prestashop script:"
-            cat travis-scripts/install-prestashop
-            echo ''
+            # Remove cache
+            rm -rf var/cache/*
+            # Remove logs
+            rm -rf var/logs/*
 
-			bash travis-scripts/install-prestashop
+            echo "* Installing PrestaShop, this may take a while ...";
+            php install-dev/index_cli.php --language=en --country=fr --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
+            if test ! $? -eq 0; then
+                echo "Installed failed, displaying errors from logs:"
+                echo
+                cat var/logs/* | grep -v error
+                exit 1
+            fi
+
+            # create test db
+            composer run-script create-test-db
         popd > /dev/null
     popd > /dev/null
 fi
