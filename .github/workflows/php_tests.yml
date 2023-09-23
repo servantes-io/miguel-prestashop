@@ -122,8 +122,7 @@ jobs:
       mysql:
         image: mysql:5.7
         env:
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: 'password'
         ports:
           - 3306/tcp
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
@@ -139,8 +138,13 @@ jobs:
           tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
+      - name: Start mysql service
+        run: sudo /etc/init.d/mysql start
+      - name: Status mysql service
+        run: sudo systemctl status mysql
+
       - name: Test MySQL Connection
-        run: mysql -u root -h '127.0.0.1' --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
+        run: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
       - name: Cache Prestashop installation
         uses: actions/cache@v3
