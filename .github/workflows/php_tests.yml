@@ -142,6 +142,12 @@ jobs:
       - name: Test MySQL Connection
         run: mysql -u root -h '127.0.0.1' --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
+      - name: Cache Prestashop installation
+        uses: actions/cache@v3
+        with:
+          path: vendor2/PrestaShop
+          key: prestashop-${{ matrix.prestashop-version }}-${{ matrix.php-version }}
+
       - name: Install PrestaShop
         run: bash .github/scripts/install-prestashop.sh
         env:
