@@ -1,9 +1,10 @@
 <phpunit stopOnFailure="true"
          backupGlobals="true"
->
+         bootstrap="bootstrap.php"
+         verbose="true">
   <testsuites>
     <testsuite name="Unit">
-      <directory>.</directory>
+      <directory suffix="Test.php">.</directory>
     </testsuite>
   </testsuites>
 </phpunit>

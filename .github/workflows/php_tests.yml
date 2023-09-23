@@ -112,24 +112,41 @@ jobs:
   phpunit:
     name: PHPUnit
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - php-version: '7.1'
+            prestashop-version: '1.7.7.8'
+            phpunit-version: '7.5.20'
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 3306/tcp
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache vendor folder
-        uses: actions/cache@v3
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
         with:
-          path: vendor
-          key: php-${{ hashFiles('composer.lock') }}
+          php-version: ${{ matrix.php-version }}
+          coverage: xdebug
+          tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
+          extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
-      - name: Cache composer folder
-        uses: actions/cache@v3
-        with:
-          path: ~/.composer/cache
-          key: php-composer-cache
+      - name: Test MySQL Connection
+        run: mysql -u root -h '127.0.0.1' --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
-      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
-      - run: composer rm --dev  prestashop/php-dev-tools --no-progress --no-ansi --no-interaction
+      - name: Install PrestaShop
+        run: bash .github/scripts/install-prestashop.sh
+        env:
+          PRESTASHOP_VERSION: ${{ matrix.prestashop-version }}
+          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
 
       - name: Run PHPUnit
-        run: make phpunit
+        run: phpunit -c ./tests/Unit/phpunit.xml

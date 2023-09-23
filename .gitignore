@@ -174,3 +174,4 @@ themes/default-bootstrap/modules/*/mails/*
 /*.zip
 .php-cs-fixer.cache
 miguel/config.xml
+vendor2
