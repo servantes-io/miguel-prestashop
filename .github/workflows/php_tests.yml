@@ -116,7 +116,7 @@ jobs:
       matrix:
         include:
           - php-version: '7.1'
-            prestashop-version: '1.7.7.8'
+            prestashop-version: '1.7.8.10'
             phpunit-version: '7.5.20'
     services:
       mysql:
@@ -138,19 +138,8 @@ jobs:
           tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
-      - name: Start mysql service
-        run: sudo /etc/init.d/mysql start
-      - name: Status mysql service
-        run: sudo systemctl status mysql
-
       - name: Test MySQL Connection
         run: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
-
-      - name: Cache Prestashop installation
-        uses: actions/cache@v3
-        with:
-          path: vendor2/PrestaShop
-          key: prestashop-${{ matrix.prestashop-version }}-${{ matrix.php-version }}
 
       - name: Install PrestaShop
         run: bash .github/scripts/install-prestashop.sh

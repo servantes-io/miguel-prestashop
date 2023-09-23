@@ -1,7 +1,10 @@
 <phpunit stopOnFailure="true"
          backupGlobals="true"
          bootstrap="bootstrap.php"
-         verbose="true">
+         verbose="true"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true">
   <testsuites>
     <testsuite name="Unit">
       <directory suffix="Test.php">.</directory>
