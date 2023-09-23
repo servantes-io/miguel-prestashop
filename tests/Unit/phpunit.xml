@@ -5,6 +5,9 @@
          convertErrorsToExceptions="true"
          convertNoticesToExceptions="true"
          convertWarningsToExceptions="true">
+  <php>
+    <server name="KERNEL_CLASS" value="AppKernel" />
+  </php>
   <testsuites>
     <testsuite name="Unit">
       <directory suffix="Test.php">.</directory>

@@ -16,7 +16,7 @@
 if (file_exists(__DIR__ . '/../../vendor2/PrestaShop/tests-legacy')) {
     require_once __DIR__ . '/../../vendor2/PrestaShop/tests-legacy/bootstrap.php';
 } else {
-    require_once __DIR__ . '/../../vendor2/PrestaShop/tests/bootstrap.php';
+    require_once __DIR__ . '/../../vendor2/PrestaShop/tests/Unit/bootstrap.php';
 }
 
 require_once __DIR__ . '/../../vendor2/PrestaShop/config/config.inc.php';

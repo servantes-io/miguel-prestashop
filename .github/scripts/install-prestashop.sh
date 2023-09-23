@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ex
+
 mkdir -p vendor2
 if [ ! -d vendor2/PrestaShop ]; then
     pushd vendor2 > /dev/null
@@ -11,16 +13,17 @@ if [ ! -d vendor2/PrestaShop ]; then
             composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
             # Fixes from https://github.com/retailcrm/prestashop-module/blob/c531f9b1249eef2ffbad6eaecc686cada9a975f7/Makefile#L60
-            sed -i 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
+            # sed -i 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
 
-            sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
-	        cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
+            # sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
+	          # cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
 
-	        sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
-	        cat classes/Language.php | grep -A 3 -B 3 'translator = '
+	          # sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
+	          # cat classes/Language.php | grep -A 3 -B 3 'translator = '
 
             # Clean up needed for StarterTheme tests
-            mysql -u root --password=password --port ${MYSQL_PORT} -e "DROP DATABASE IF EXISTS \`prestashop\`;"
+            mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`prestashop\`;"
+            mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`test_prestashop\`;"
 
             # Remove cache
             rm -rf var/cache/*
@@ -38,6 +41,8 @@ if [ ! -d vendor2/PrestaShop ]; then
 
             # create test db
             composer run-script create-test-db
+
+            mkdir -p modules/miguel
         popd > /dev/null
     popd > /dev/null
 fi

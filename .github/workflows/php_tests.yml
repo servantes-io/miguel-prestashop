@@ -152,3 +152,7 @@ jobs:
 
       - name: Run PHPUnit
         run: phpunit -c ./tests/Unit/phpunit.xml
+
+      - uses: php-actions/phpunit@v3
+        with:
+          configuration: tests/Unit/phpunit.xml
