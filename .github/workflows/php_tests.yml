@@ -131,4 +131,4 @@ jobs:
       - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
       - name: Run PHPUnit
-        run: php vendor/bin/phpunit tests/Unit
+        run: make phpunit
