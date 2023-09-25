@@ -15,18 +15,18 @@
 
 namespace Tests\Unit\utils;
 
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
 
-final class MiguelSettingsTest extends KernelTestCase
+final class MiguelSettingsTest extends TestCase
 {
     public function testSaveValue()
     {
-        $this->assertFalse(Configuration::get(MiguelSettings::API_ENABLE_KEY));
+        $this->assertFalse(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
 
-        MiguelSettings::setEnabled(true);
+        \MiguelSettings::setEnabled(true);
 
-        $this->assertFalse(Configuration::get(MiguelSettings::API_ENABLE_KEY));
+        $this->assertTrue(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
     }
 }

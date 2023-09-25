@@ -1,5 +1,5 @@
 <phpunit stopOnFailure="true"
-         backupGlobals="true"
+         backupGlobals="false"
          bootstrap="bootstrap.php"
          verbose="true"
          convertErrorsToExceptions="true"

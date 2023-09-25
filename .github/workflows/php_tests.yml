@@ -117,7 +117,7 @@ jobs:
         include:
           - php-version: '7.4'
             prestashop-version: '1.7.8.10'
-            phpunit-version: '^9'
+            phpunit-version: '^7.5'
     services:
       mysql:
         image: mysql:5.7
@@ -141,16 +141,16 @@ jobs:
       - name: Test MySQL Connection
         run: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
-      - name: Download PrestaShop
-        run: bash .github/scripts/download-prestashop.sh
-        env:
-          PRESTASHOP_VERSION: ${{ matrix.prestashop-version }}
-
       - name: Cache Prestashop folder
         uses: actions/cache@v3
         with:
           path: vendor2
           key: php-${{ matrix.prestashop-version }}-${{ matrix.php-version }}
+
+      - name: Download PrestaShop
+        run: bash .github/scripts/download-prestashop.sh
+        env:
+          PRESTASHOP_VERSION: ${{ matrix.prestashop-version }}
 
       - name: Install PrestaShop
         run: bash .github/scripts/install-prestashop.sh
