@@ -2,47 +2,36 @@
 
 set -ex
 
-mkdir -p vendor2
-if [ ! -d vendor2/PrestaShop ]; then
-    pushd vendor2 > /dev/null
-        # download prestashop
-        git clone --depth 1 --branch $PRESTASHOP_VERSION https://github.com/PrestaShop/PrestaShop
+pushd vendor2/PrestaShop > /dev/null
+    # Fixes from https://github.com/retailcrm/prestashop-module/blob/c531f9b1249eef2ffbad6eaecc686cada9a975f7/Makefile#L60
+    sed -i 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
 
-        pushd PrestaShop > /dev/null
-            # install deps
-            composer install --prefer-dist --no-progress --no-ansi --no-interaction
+    sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
+    cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
 
-            # Fixes from https://github.com/retailcrm/prestashop-module/blob/c531f9b1249eef2ffbad6eaecc686cada9a975f7/Makefile#L60
-            # sed -i 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
+    sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
+    cat classes/Language.php | grep -A 3 -B 3 'translator = '
 
-            # sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
-	          # cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
+    # Clean up needed for StarterTheme tests
+    mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`prestashop\`;"
+    mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`test_prestashop\`;"
 
-	          # sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
-	          # cat classes/Language.php | grep -A 3 -B 3 'translator = '
+    # Remove cache
+    rm -rf var/cache/*
+    # Remove logs
+    rm -rf var/logs/*
 
-            # Clean up needed for StarterTheme tests
-            mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`prestashop\`;"
-            mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "DROP DATABASE IF EXISTS \`test_prestashop\`;"
+    echo "* Installing PrestaShop, this may take a while ...";
+    php install-dev/index_cli.php --language=en --country=fr --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
+    if test ! $? -eq 0; then
+        echo "Installed failed, displaying errors from logs:"
+        echo
+        cat var/logs/* | grep -v error
+        exit 1
+    fi
 
-            # Remove cache
-            rm -rf var/cache/*
-            # Remove logs
-            rm -rf var/logs/*
+    # create test db
+    composer run-script create-test-db
 
-            echo "* Installing PrestaShop, this may take a while ...";
-            php install-dev/index_cli.php --language=en --country=fr --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
-            if test ! $? -eq 0; then
-                echo "Installed failed, displaying errors from logs:"
-                echo
-                cat var/logs/* | grep -v error
-                exit 1
-            fi
-
-            # create test db
-            composer run-script create-test-db
-
-            mkdir -p modules/miguel
-        popd > /dev/null
-    popd > /dev/null
-fi
+    mkdir -p modules/miguel
+popd > /dev/null
