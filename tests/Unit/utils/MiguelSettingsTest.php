@@ -15,11 +15,11 @@
 
 namespace Tests\Unit\utils;
 
-use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
 
-final class MiguelSettingsTest extends TestCase
+final class MiguelSettingsTest extends KernelTestCase
 {
     public function testSaveValue()
     {
