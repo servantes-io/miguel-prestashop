@@ -145,7 +145,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: vendor2
-          key: php-${{ matrix.prestashop-version }}-${{ matrix.php-version }}
+          key: prestashop-${{ matrix.prestashop-version }}-php-${{ matrix.php-version }}
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
@@ -162,7 +162,3 @@ jobs:
 
       - name: Run PHPUnit
         run: phpunit -c ./tests/Unit/phpunit.xml
-
-      - uses: php-actions/phpunit@v3
-        with:
-          configuration: tests/Unit/phpunit.xml

@@ -10,9 +10,8 @@ pushd vendor2/PrestaShop > /dev/null
     cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
 
     sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
-    cat classes/Language.php | grep -A 3 -B 3 'translator = '
-
     sed -i "s/\$sfContainer->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
+    cat classes/Language.php | grep -A 3 -B 3 'translator = '
 
     # Clean up needed for StarterTheme tests
     mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "

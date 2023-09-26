@@ -12,7 +12,6 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
-
 if (file_exists(__DIR__ . '/../../vendor2/PrestaShop/tests-legacy')) {
     require_once __DIR__ . '/../../vendor2/PrestaShop/tests-legacy/bootstrap.php';
 } else {
