@@ -79,7 +79,7 @@ Now the module should be connected to Miguel, all that's left is to create produ
 
 | Module version | Branch   | PHP version |
 |----------------|----------|-------------|
-| `>= 1.0.0`     | `main`   | 5.6 - 8.2   | 
+| `>= 1.0.0`     | `main`   | 7.1 - 8.2   |
 
 ### Further module limitations
 

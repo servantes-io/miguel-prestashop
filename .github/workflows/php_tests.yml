@@ -115,6 +115,9 @@ jobs:
     strategy:
       matrix:
         include:
+          - php-version: '7.1'
+            prestashop-version: '1.7.8.10'
+            phpunit-version: '^7.5'
           - php-version: '7.4'
             prestashop-version: '1.7.8.10'
             phpunit-version: '^7.5'
