@@ -1,0 +1,15 @@
+<phpunit backupGlobals="false"
+         bootstrap="bootstrap.php"
+         verbose="true"
+         convertErrorsToExceptions="true"
+         convertWarningsToExceptions="true">
+  <php>
+    <server name="KERNEL_CLASS" value="AppKernel" />
+    <env name="SYMFONY_DEPRECATIONS_HELPER" value="weak"/>
+  </php>
+  <testsuites>
+    <testsuite name="Unit">
+      <directory suffix="Test.php">.</directory>
+    </testsuite>
+  </testsuites>
+</phpunit>

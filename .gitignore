@@ -130,8 +130,6 @@ php-cs-fixer
 .grunt/*
 
 # Translations and emails templates
-
-translations/*
 mails/*
 !mails/themes/
 !mails/_partials/
@@ -175,3 +173,5 @@ themes/default-bootstrap/modules/*/mails/*
 /run
 /*.zip
 .php-cs-fixer.cache
+miguel/config.xml
+vendor2
