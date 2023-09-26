@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
 
+function mysed() {
+  local regex=$1
+  local file=$2
+
+  if [ -f "$file" ]; then
+    sed -i "$regex" "$file"
+  fi
+}
+
 set -ex
 
 pushd vendor2/PrestaShop > /dev/null
     # Fixes from https://github.com/retailcrm/prestashop-module/blob/c531f9b1249eef2ffbad6eaecc686cada9a975f7/Makefile#L60
-    sed -i 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
+    mysed 's/throw new Exception/#throw new Exception/g' src/PrestaShopBundle/Install/DatabaseDump.php
 
-    sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
+    mysed "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/lang/DataLang.php
     cat classes/lang/DataLang.php | grep -A 3 -B 3 'this->translator = '
 
-    sed -i "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
-    sed -i "s/\$sfContainer->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
+    mysed "s/SymfonyContainer::getInstance()->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
+    mysed "s/\$sfContainer->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
     cat classes/Language.php | grep -A 3 -B 3 'translator = '
 
     # Clean up needed for StarterTheme tests
