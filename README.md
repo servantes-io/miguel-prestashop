@@ -63,7 +63,7 @@ Now the module should be connected to Miguel, all that's left is to create produ
 ## Information about the module
 
 ### Supported versions
-- PrestaShop 1.7.x.
+- PrestaShop 1.7.x. and 8.x
 - If you have problems using the module, please contact us at [support@servantes.io](mailto:support@servantes.io).
 
 ### Provided functions
