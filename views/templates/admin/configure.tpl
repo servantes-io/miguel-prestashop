@@ -31,7 +31,7 @@
 
 	<br />
 
-	<div class="module-state module-state-{$module_state_color|escape}">
+	<div class="module-state module-state-{$module_state_color|escape:'html':'UTF-8'}">
 		<strong>{l s='Module state' mod='miguel'}: </strong>
 
 		<span>
