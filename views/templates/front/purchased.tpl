@@ -16,7 +16,7 @@
 {extends file='customer/page.tpl'}
 
 {block name='page_title'}
-  {$miguelTitlePage}
+  {$miguelTitlePage|escape:'html':'UTF-8'}
 {/block}
 
 {block name='page_content'}
@@ -37,21 +37,21 @@
         <tbody>
           {foreach from=$miguel_purchased item=book}
             <tr>
-              <th scope="row">{$book.product.book.title}</th>
-              <td>{$book.reference}</td>
-              <td>{$book.date_add}</td>
+              <th scope="row">{$book.product.book.title|escape:'html':'UTF-8'}</th>
+              <td>{$book.reference|escape:'html':'UTF-8'}</td>
+              <td>{$book.date_add|escape:'html':'UTF-8'}</td>
               <td>
                 {if $book.paid}
                   {$product_count = count($book.product.formats)}
                   {if $product_count > 0}
                     {foreach from=$book.product.formats key=k item=format}
-                      <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if}
+                      <a href="{$format.download_url|escape:'url':'UTF-8'}">{$format.format|escape:'html':'UTF-8'}</a>{if $product_count-1 != $k}, {/if}
                     {/foreach}
                   {else}
                     <th>{l s='The books are being prepared' mod='miguel'}</th>
                   {/if}
                 {else}
-                  {$book.order_state}
+                  {$book.order_state|escape:'html':'UTF-8'}
                 {/if}
               </td>
             </tr>
@@ -64,22 +64,22 @@
           <div class="order">
             <div class="row">
               <div class="col-xs-12">
-                <h4>{$book.product.book.title}</h4>
-                <div class="">{l s='Order Reference' mod='miguel'}: {$book.reference}</div>
-                <div class="">{l s='Purchase Date' mod='miguel'}: {$book.date_add}</div>
+                <h4>{$book.product.book.title|escape:'html':'UTF-8'}</h4>
+                <div class="">{l s='Order Reference' mod='miguel'}: {$book.reference|escape:'html':'UTF-8'}</div>
+                <div class="">{l s='Purchase Date' mod='miguel'}: {$book.date_add|escape:'html':'UTF-8'}</div>
                 <div class="">
                   {if $book.paid}
                     {$product_count = count($book.product.formats)}
                     {if $product_count > 0}
                       {l s='Download' mod='miguel'}:
                       {foreach from=$book.product.formats key=k item=format}
-                        <a href="{$format.download_url}">{$format.format}</a>{if $product_count-1 != $k}, {/if}
+                        <a href="{$format.download_url|escape:'url':'UTF-8'}">{$format.format|escape:'html':'UTF-8'}</a>{if $product_count-1 != $k}, {/if}
                       {/foreach}
                     {else}
                       <th>{l s='The books are being prepared' mod='miguel'}</th>
                     {/if}
                   {else}
-                    {$book.order_state}
+                    {$book.order_state|escape:'html':'UTF-8'}
                   {/if}
                 </div>
               </div>
