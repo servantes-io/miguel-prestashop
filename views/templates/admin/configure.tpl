@@ -26,7 +26,7 @@
 	</p>
 	<br />
 	<p>
-		<a href='https://www.servantes.cz/miguel' target='_blank'>{l s='Read more about Miguel.' mod='miguel'}</a>
+		<a href='{l s='https://www.servantes.cz/en/miguel' mod='miguel'}' target='_blank'>{l s='Read more about Miguel.' mod='miguel'}</a>
 	</p>
 
 	<br />

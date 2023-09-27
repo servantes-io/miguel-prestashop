@@ -43,7 +43,7 @@ class Miguel extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Miguel');
-        $this->description = $this->l('Allows you to sell books through the Miguel service.');
+        $this->description = $this->l('Sell your e-books and audiobooks directly on your e-shop.');
         $this->confirmUninstall = $this->l('Are you sure you want to remove the add-on?');
         $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
 
