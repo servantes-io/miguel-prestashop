@@ -68,7 +68,8 @@ class Miguel extends Module
     {
         MiguelSettings::deleteAll();
 
-        include dirname(__FILE__) . '/src/sql/uninstall.php';
+        // here is normal uninstall process, because of comments and other lint issues I have deleted the file
+        // include dirname(__FILE__) . '/src/sql/uninstall.php';
 
         return parent::uninstall();
     }
