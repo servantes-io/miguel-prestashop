@@ -24,14 +24,12 @@ class Miguel extends Module
 {
     public const HOOKS_17 = [
         'header',
-        'backOfficeHeader', // PrestaShop 1.7 and earlier
         'actionOrderStatusUpdate', // volá se při updatu objednávky
         'displayCustomerAccount', // volá se při najetí do účtu
     ];
 
     public const HOOKS_8 = [
         'header',
-        'displayBackOfficeHeader', // PrestaShop 8+
         'actionOrderStatusUpdate', // volá se při updatu objednávky
         'displayCustomerAccount', // volá se při najetí do účtu
     ];
@@ -91,11 +89,14 @@ class Miguel extends Module
      */
     public function getContent()
     {
+        $saved = false;
+
         /*
          * If values have been submitted in the form, process.
          */
         if (((bool) Tools::isSubmit('submitMiguelModule')) == true) {
             $this->postProcess();
+            $saved = true;
         }
 
         // kontrola api
@@ -136,6 +137,7 @@ class Miguel extends Module
             $module_state_color = "danger";
         }
 
+        $this->context->smarty->assign('saved', $saved);
         $this->context->smarty->assign('module_state', $module_state);
         $this->context->smarty->assign('module_state_color', $module_state_color);
 
@@ -334,25 +336,6 @@ class Miguel extends Module
         foreach (array_keys($form_values) as $key) {
             MiguelSettings::save($key, Tools::getValue($key));
         }
-    }
-
-    /**
-     * Add the CSS & JavaScript files you want to be loaded in the BO.
-     */
-    public function hookBackOfficeHeader()
-    {
-        if (Tools::getValue('module_name') == $this->name) {
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
-        }
-    }
-
-    /**
-     * Add the CSS & JavaScript files you want to be loaded in the BO.
-     */
-    public function hookDisplayBackOfficeHeader()
-    {
-        // PrestaShop 8 version of hookBackOfficeHeader
-        $this->hookBackOfficeHeader();
     }
 
     /**

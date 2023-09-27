@@ -12,6 +12,10 @@
 *  @license LICENSE.txt
 *}
 
+{if $saved eq true}
+	<div class="alert alert-success">{l s='Your settings have been saved.' mod='miguel'}</div>
+{/if}
+
 <div class="panel">
 	<div class="panel-heading"><i class="icon icon-book"></i> {l s='Miguel' mod='miguel'}</div>
 	<p>
