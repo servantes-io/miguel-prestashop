@@ -24,12 +24,11 @@ class Miguel extends Module
 {
     public const HOOKS = [
         'header',
-        'backOfficeHeader',
         'actionOrderStatusUpdate', // volá se při updatu objednávky
         'displayCustomerAccount', // volá se při najetí do účtu
     ];
 
-    private $logger;
+    private $_logger;
 
     public function __construct()
     {
@@ -44,13 +43,13 @@ class Miguel extends Module
         parent::__construct();
 
         $this->displayName = $this->l('Miguel');
-        $this->description = $this->l('Allows you to sell books through the Miguel service.');
+        $this->description = $this->l('Sell your e-books and audiobooks directly on your e-shop.');
         $this->confirmUninstall = $this->l('Are you sure you want to remove the add-on?');
         $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
 
         if (defined('_LOGGER_')) {
-            $this->logger = new FileLogger(0); // 0 == debug level, logDebug() won’t work without this.
-            $this->logger->setFilename(_PS_ROOT_DIR_ . '/modules/miguel/debug.log');
+            $this->_logger = new FileLogger(0); // 0 == debug level, logDebug() won’t work without this.
+            $this->_logger->setFilename(_PS_ROOT_DIR_ . '/modules/miguel/debug.log');
         }
     }
 
@@ -68,7 +67,8 @@ class Miguel extends Module
     {
         MiguelSettings::deleteAll();
 
-        include dirname(__FILE__) . '/src/sql/uninstall.php';
+        // here is normal uninstall process, because of comments and other lint issues I have deleted the file
+        // include dirname(__FILE__) . '/src/sql/uninstall.php';
 
         return parent::uninstall();
     }
@@ -83,37 +83,57 @@ class Miguel extends Module
      */
     public function getContent()
     {
+        $saved = false;
+
         /*
          * If values have been submitted in the form, process.
          */
         if (((bool) Tools::isSubmit('submitMiguelModule')) == true) {
             $this->postProcess();
+            $saved = true;
         }
 
         // kontrola api
-        $alert_state = 'info_setup_module';
+        $module_state = 'info_setup_module';
         $api_configuration = $this->getCurrentApiConfiguration();
         if (false == $api_configuration) { // není vložena url nebo token, tak nemohu aktivovat
             if (MiguelSettings::getEnabled()) {
                 MiguelSettings::setEnabled(false);
-                $alert_state = 'info_setup_module_first';
+                $module_state = 'info_setup_module_first';
             } else {
-                $alert_state = 'info_setup_module';
+                $module_state = 'info_setup_module';
             }
         } elseif ($api_configuration['api_enable']) { // je povoleno api, validuji token
             $test_key = $this->curlPost('/v1/prestashop/connect', $this->getPrestashopDetails());
             if (false == $test_key) {
-                $alert_state = 'warning_api_fail';
+                $module_state = 'warning_api_fail';
                 // pokud se nepodaří přihlásit, tak deaktivuji API
                 MiguelSettings::setEnabled(false);
             } else {
-                $alert_state = 'success_api_ok';
+                $module_state = 'success_api_ok';
             }
         } else {
-            $alert_state = 'info_setup_module_activate';
+            $module_state = 'info_setup_module_activate';
         }
 
-        $this->context->smarty->assign('alert_state', $alert_state);
+        $module_state_color = 'info';
+        if ($module_state === 'info_setup_module') {
+            $module_state_color = 'info';
+        } elseif ($module_state === 'info_setup_module_first') {
+            $module_state_color = 'warning';
+        } elseif ($module_state === 'info_setup_module_activate') {
+            $module_state_color = 'warning';
+        } elseif ($module_state === 'warning_api_fail') {
+            $module_state_color = 'danger';
+        } elseif ($module_state === 'success_api_ok') {
+            $module_state_color = 'success';
+        } else {
+            $module_state_color = 'danger';
+        }
+
+        $this->context->smarty->assign('saved', $saved);
+        $this->context->smarty->assign('module_state', $module_state);
+        $this->context->smarty->assign('module_state_color', $module_state_color);
 
         $this->context->smarty->assign('module_dir', $this->_path);
 
@@ -314,17 +334,6 @@ class Miguel extends Module
     }
 
     /**
-     * Add the CSS & JavaScript files you want to be loaded in the BO.
-     */
-    public function hookBackOfficeHeader()
-    {
-        if (Tools::getValue('module_name') == $this->name) {
-            // $this->context->controller->addJS($this->_path.'views/js/back.js');
-            // $this->context->controller->addCSS($this->_path.'views/css/back.css');
-        }
-    }
-
-    /**
      * Add the CSS & JavaScript files you want to be added on the FO.
      */
     public function hookHeader()
@@ -337,7 +346,7 @@ class Miguel extends Module
     {
         if (false == isset($params['id_order'])) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Params not set');
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Params not set');
             }
 
             return;
@@ -345,7 +354,7 @@ class Miguel extends Module
         $order = new Order((int) $params['id_order']);
         if (false == Validate::isLoadedObject($order)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Order: ' . $params['id_order']);
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Order: ' . $params['id_order']);
             }
 
             return;
@@ -353,7 +362,7 @@ class Miguel extends Module
         $customer = new Customer($order->id_customer);
         if (false == Validate::isLoadedObject($customer)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Customer: ' . $order->id_customer . ', id_order: ' . $params['id_order']);
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Customer: ' . $order->id_customer . ', id_order: ' . $params['id_order']);
             }
 
             return;
@@ -361,7 +370,7 @@ class Miguel extends Module
         $currency = new Currency($order->id_currency);
         if (false == Validate::isLoadedObject($currency)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Currency: ' . $order->id_currency . ', id_order: ' . $params['id_order']);
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Currency: ' . $order->id_currency . ', id_order: ' . $params['id_order']);
             }
 
             return;
@@ -369,7 +378,7 @@ class Miguel extends Module
         $address_invoice = new Address($order->id_address_invoice);
         if (false == Validate::isLoadedObject($address_invoice)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Address: ' . $order->id_address_invoice . ', id_order: ' . $params['id_order']);
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Address: ' . $order->id_address_invoice . ', id_order: ' . $params['id_order']);
             }
 
             return;
@@ -377,7 +386,7 @@ class Miguel extends Module
         $language = new Language($customer->id_lang);
         if (false == Validate::isLoadedObject($language)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Language: ' . $customer->id_lang . ', id_order: ' . $params['id_order']);
+                $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Language: ' . $customer->id_lang . ', id_order: ' . $params['id_order']);
             }
 
             return;
@@ -444,14 +453,14 @@ class Miguel extends Module
         $configuration = $this->getCurrentApiConfiguration();
         if (false == $configuration) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('configuration not set');
+                $this->_logger->logDebug('configuration not set');
             }
 
             return false;
         }
         if (false == $configuration['api_enable']) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('configuration api_enable not enable');
+                $this->_logger->logDebug('configuration api_enable not enable');
             }
 
             return false;
@@ -495,14 +504,14 @@ class Miguel extends Module
         $configuration = $this->getCurrentApiConfiguration();
         if (false == $configuration) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('configuration not set');
+                $this->_logger->logDebug('configuration not set');
             }
 
             return false;
         }
         if (false == $configuration['api_enable']) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('configuration api_enable not enable');
+                $this->_logger->logDebug('configuration api_enable not enable');
             }
 
             return false;
@@ -613,13 +622,13 @@ class Miguel extends Module
 
     public function logData($data)
     {
-        $this->logger->logDebug($data);
+        $this->_logger->logDebug($data);
     }
 
     /* funkce pro změnu stavu objednávky v callbacku */
     public function setOrderStates($callback)
     {
-        // $this->logger->logDebug($callback);
+        // $this->_logger->logDebug($callback);
 
         $order_code = htmlspecialchars($callback['code']);
         $miguel_state = $callback['miguel_state'];
@@ -793,7 +802,7 @@ class Miguel extends Module
         $language = new Language($lang_id);
         if (false == Validate::isLoadedObject($language)) {
             if (defined('_LOGGER_')) {
-                $this->logger->logDebug('getLanguageCode: Cannot create new Language: ' . $lang_id);
+                $this->_logger->logDebug('getLanguageCode: Cannot create new Language: ' . $lang_id);
             }
 
             return false;

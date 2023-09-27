@@ -185,6 +185,6 @@ class MiguelSettings
             return false;
         }
 
-        return intval($new_state_id_raw);
+        return (int) $new_state_id_raw;
     }
 }

@@ -12,9 +12,9 @@
 *  @license LICENSE.txt
 *}
 
-<a class="col-lg-4 col-md-6 col-sm-6 col-xs-12" id="ebook-link" href="{$url}">
+<a class="col-lg-4 col-md-6 col-sm-6 col-xs-12" id="ebook-link" href="{$url|escape:'url':'UTF-8'}">
   <span class="link-item">
     <i class="material-icons">book</i>
-    {$miguelTitlePage}
+    {$miguelTitlePage|escape:'html':'UTF-8'}
   </span>
 </a>

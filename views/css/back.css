@@ -13,9 +13,34 @@
 */
 
 /*
-skryje wrapper formuláře, než se přes jquery nastaví viditelné položky dle selectu
-*/
-
-.form-wrapper{
+ skryje wrapper formuláře, než se přes jquery nastaví viditelné položky dle selectu
+ */
+.form-wrapper {
     display: none;
+}
+
+/*
+ border around module state
+ */
+.module-state {
+    padding: 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.module-state-success {
+    border-color: #d6e9c6;
+    background-color: #dff0d8;
+}
+.module-state-info {
+    border-color: #bce8f1;
+    background-color: #d9edf7;
+}
+.module-state-danger {
+    border-color: #ebccd1;
+    background-color: #f2dede;
+
+.module-state-warning {
+    border-color: #faebcc;
+    background-color: #fcf8e3;
 }
