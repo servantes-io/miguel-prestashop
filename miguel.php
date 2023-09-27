@@ -22,9 +22,16 @@ require_once 'src/utils/miguel-settings.php';
 
 class Miguel extends Module
 {
-    public const HOOKS = [
+    public const HOOKS_17 = [
         'header',
-        'backOfficeHeader',
+        'backOfficeHeader', // PrestaShop 1.7 and earlier
+        'actionOrderStatusUpdate', // volá se při updatu objednávky
+        'displayCustomerAccount', // volá se při najetí do účtu
+    ];
+
+    public const HOOKS_8 = [
+        'header',
+        'displayBackOfficeHeader', // PrestaShop 8+
         'actionOrderStatusUpdate', // volá se při updatu objednávky
         'displayCustomerAccount', // volá se při najetí do účtu
     ];
@@ -61,7 +68,7 @@ class Miguel extends Module
         include dirname(__FILE__) . '/src/sql/install.php';
 
         return parent::install()
-            && $this->registerHook(static::HOOKS);
+            && $this->registerHooksDependentOnPrestashopVersion();
     }
 
     public function uninstall()
@@ -323,6 +330,15 @@ class Miguel extends Module
             // $this->context->controller->addJS($this->_path.'views/js/back.js');
             // $this->context->controller->addCSS($this->_path.'views/css/back.css');
         }
+    }
+
+    /**
+     * Add the CSS & JavaScript files you want to be loaded in the BO.
+     */
+    public function hookDisplayBackOfficeHeader()
+    {
+        // PrestaShop 8 version of hookBackOfficeHeader
+        $this->hookBackOfficeHeader();
     }
 
     /**
@@ -801,5 +817,19 @@ class Miguel extends Module
         }
 
         return $language->iso_code;
+    }
+
+    /**
+     * Register hooks dependent on PrestaShop version.
+     *
+     * @return bool result of registration
+     */
+    private function registerHooksDependentOnPrestashopVersion()
+    {
+        if (version_compare(_PS_VERSION_, '8', '>=')) {
+            return $this->registerHook(static::HOOKS_8);
+        } else {
+            return $this->registerHook(static::HOOKS_17);
+        }
     }
 }
