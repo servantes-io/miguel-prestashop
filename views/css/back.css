@@ -12,14 +12,6 @@
 *  @license LICENSE.txt
 */
 
-/*
-skryje wrapper formuláře, než se přes jquery nastaví viditelné položky dle selectu
-*/
-
-.form-wrapper {
-    display: none;
-}
-
 .module-state {
     padding: 15px;
     border: 1px solid transparent;

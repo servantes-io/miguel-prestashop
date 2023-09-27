@@ -151,7 +151,6 @@ class Miguel extends Module
      */
     protected function renderForm()
     {
-        $this->context->controller->addJS($this->_path . 'views/js/back.js');
         $this->context->controller->addCSS($this->_path . 'views/css/back.css');
 
         $helper = new HelperForm();
@@ -343,7 +342,6 @@ class Miguel extends Module
     public function hookBackOfficeHeader()
     {
         if (Tools::getValue('module_name') == $this->name) {
-            // $this->context->controller->addJS($this->_path.'views/js/back.js');
             $this->context->controller->addCSS($this->_path.'views/css/back.css');
         }
     }
