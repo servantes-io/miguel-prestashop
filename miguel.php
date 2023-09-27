@@ -22,13 +22,7 @@ require_once 'src/utils/miguel-settings.php';
 
 class Miguel extends Module
 {
-    public const HOOKS_17 = [
-        'header',
-        'actionOrderStatusUpdate', // volá se při updatu objednávky
-        'displayCustomerAccount', // volá se při najetí do účtu
-    ];
-
-    public const HOOKS_8 = [
+    public const HOOKS = [
         'header',
         'actionOrderStatusUpdate', // volá se při updatu objednávky
         'displayCustomerAccount', // volá se při najetí do účtu
@@ -66,7 +60,7 @@ class Miguel extends Module
         include dirname(__FILE__) . '/src/sql/install.php';
 
         return parent::install()
-            && $this->registerHooksDependentOnPrestashopVersion();
+            && $this->registerHook(static::HOOKS);
     }
 
     public function uninstall()
@@ -815,19 +809,5 @@ class Miguel extends Module
         }
 
         return $language->iso_code;
-    }
-
-    /**
-     * Register hooks dependent on PrestaShop version.
-     *
-     * @return bool result of registration
-     */
-    private function registerHooksDependentOnPrestashopVersion()
-    {
-        if (version_compare(_PS_VERSION_, '8', '>=')) {
-            return $this->registerHook(static::HOOKS_8);
-        } else {
-            return $this->registerHook(static::HOOKS_17);
-        }
     }
 }
