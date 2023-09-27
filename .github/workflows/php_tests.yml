@@ -157,7 +157,11 @@ jobs:
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
       - name: Test MySQL Connection
-        run: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
+        uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 10
+          max_attempts: 3
+          command: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
       - name: Cache Prestashop folder
         uses: actions/cache@v3

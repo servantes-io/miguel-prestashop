@@ -118,17 +118,17 @@ class Miguel extends Module
 
         $module_state_color = 'info';
         if ($module_state === 'info_setup_module') {
-            $module_state_color = "info";
+            $module_state_color = 'info';
         } elseif ($module_state === 'info_setup_module_first') {
-            $module_state_color = "warning";
+            $module_state_color = 'warning';
         } elseif ($module_state === 'info_setup_module_activate') {
-            $module_state_color = "warning";
+            $module_state_color = 'warning';
         } elseif ($module_state === 'warning_api_fail') {
-            $module_state_color = "danger";
+            $module_state_color = 'danger';
         } elseif ($module_state === 'success_api_ok') {
-            $module_state_color = "success";
+            $module_state_color = 'success';
         } else {
-            $module_state_color = "danger";
+            $module_state_color = 'danger';
         }
 
         $this->context->smarty->assign('saved', $saved);
