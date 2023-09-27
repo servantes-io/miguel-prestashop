@@ -99,29 +99,45 @@ class Miguel extends Module
         }
 
         // kontrola api
-        $alert_state = 'info_setup_module';
+        $module_state = 'info_setup_module';
         $api_configuration = $this->getCurrentApiConfiguration();
         if (false == $api_configuration) { // není vložena url nebo token, tak nemohu aktivovat
             if (MiguelSettings::getEnabled()) {
                 MiguelSettings::setEnabled(false);
-                $alert_state = 'info_setup_module_first';
+                $module_state = 'info_setup_module_first';
             } else {
-                $alert_state = 'info_setup_module';
+                $module_state = 'info_setup_module';
             }
         } elseif ($api_configuration['api_enable']) { // je povoleno api, validuji token
             $test_key = $this->curlPost('/v1/prestashop/connect', $this->getPrestashopDetails());
             if (false == $test_key) {
-                $alert_state = 'warning_api_fail';
+                $module_state = 'warning_api_fail';
                 // pokud se nepodaří přihlásit, tak deaktivuji API
                 MiguelSettings::setEnabled(false);
             } else {
-                $alert_state = 'success_api_ok';
+                $module_state = 'success_api_ok';
             }
         } else {
-            $alert_state = 'info_setup_module_activate';
+            $module_state = 'info_setup_module_activate';
         }
 
-        $this->context->smarty->assign('alert_state', $alert_state);
+        $module_state_color = 'info';
+        if ($module_state === 'info_setup_module') {
+            $module_state_color = "info";
+        } elseif ($module_state === 'info_setup_module_first') {
+            $module_state_color = "warning";
+        } elseif ($module_state === 'info_setup_module_activate') {
+            $module_state_color = "warning";
+        } elseif ($module_state === 'warning_api_fail') {
+            $module_state_color = "danger";
+        } elseif ($module_state === 'success_api_ok') {
+            $module_state_color = "success";
+        } else {
+            $module_state_color = "danger";
+        }
+
+        $this->context->smarty->assign('module_state', $module_state);
+        $this->context->smarty->assign('module_state_color', $module_state_color);
 
         $this->context->smarty->assign('module_dir', $this->_path);
 
@@ -328,7 +344,7 @@ class Miguel extends Module
     {
         if (Tools::getValue('module_name') == $this->name) {
             // $this->context->controller->addJS($this->_path.'views/js/back.js');
-            // $this->context->controller->addCSS($this->_path.'views/css/back.css');
+            $this->context->controller->addCSS($this->_path.'views/css/back.css');
         }
     }
 

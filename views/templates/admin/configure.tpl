@@ -12,23 +12,8 @@
 *  @license LICENSE.txt
 *}
 
-{if $alert_state eq 'info_setup_module'}
-<div class="alert alert-info">{l s='The Miguel add-on has been installed correctly and is now waiting for your settings.' mod='miguel'}</div>
-{elseif $alert_state eq 'info_setup_module_first'}
-<div class="alert alert-warning">{l s='An API key must be inserted to enable Miguel.' mod='miguel'}</div>
-{elseif $alert_state eq 'info_setup_module_activate'}
-<div class="alert alert-warning">{l s='Miguel is not active, enable it.' mod='miguel'}</div>
-{elseif $alert_state eq 'warning_api_fail'}
-<div class="alert alert-danger">{l s='Your API key is incorrect, Miguel is not running.' mod='miguel'}</div>
-{elseif $alert_state eq 'success_api_ok'}
-<div class="alert alert-success">{l s='Miguel is running correctly' mod='miguel'}</div>
-{else}
-<div class="alert alert-danger">{l s='Unspecified add-on status' mod='miguel'}</div>
-{/if}
-
-
 <div class="panel">
-	<h3><i class="icon icon-book"></i> {l s='Miguel' mod='miguel'}</h3>
+	<div class="panel-heading"><i class="icon icon-book"></i> {l s='Miguel' mod='miguel'}</div>
 	<p>
 		<strong>{l s='Sell your e-books on your own e-shop!' mod='miguel'}</strong><br />
 		{l s='Miguel add-on allows you to sell secure e-books directly to customers from your e-shop.' mod='miguel'}<br />
@@ -39,10 +24,32 @@
 	<p>
 		<a href='https://www.servantes.cz/miguel' target='_blank'>{l s='Read more about Miguel.' mod='miguel'}</a>
 	</p>
+
+	<br />
+
+	<div class="module-state module-state-{$module_state_color|escape}">
+		<strong>{l s='Module state' mod='miguel'}: </strong>
+
+		<span>
+			{if $module_state eq 'info_setup_module'}
+				{l s='The Miguel add-on has been installed correctly and is now waiting for your settings.' mod='miguel'}
+			{elseif $module_state eq 'info_setup_module_first'}
+				{l s='An API key must be inserted to enable Miguel.' mod='miguel'}
+			{elseif $module_state eq 'info_setup_module_activate'}
+				{l s='Miguel is not active, enable it.' mod='miguel'}
+			{elseif $module_state eq 'warning_api_fail'}
+				{l s='Your API key is incorrect, Miguel is not running.' mod='miguel'}
+			{elseif $module_state eq 'success_api_ok'}
+				{l s='Miguel is running correctly' mod='miguel'}
+			{else}
+				{l s='Unspecified add-on status' mod='miguel'}
+			{/if}
+		</span>
+	</div>
 </div>
 
 <div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='miguel'}</h3>
+	<div class="panel-heading"><i class="icon icon-tags"></i> {l s='Documentation' mod='miguel'}</div>
 	<p>
 		&raquo; {l s='Explore the following information to set up the module' mod='miguel'} :
 		<ul>
