@@ -23,13 +23,13 @@ jobs:
           php-version: '8.2'
 
       - name: Cache vendor folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
           key: php-${{ hashFiles('composer.lock') }}
 
       - name: Cache composer folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache
           key: php-composer-cache
@@ -64,13 +64,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cache vendor folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
           key: php-${{ hashFiles('composer.lock') }}
 
       - name: Cache composer folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache
           key: php-composer-cache
@@ -91,13 +91,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cache vendor folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
           key: php-${{ hashFiles('composer.lock') }}
 
       - name: Cache composer folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache
           key: php-composer-cache
@@ -157,14 +157,14 @@ jobs:
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
       - name: Test MySQL Connection
-        uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v3
         with:
           timeout_seconds: 10
           max_attempts: 3
           command: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
 
       - name: Cache Prestashop folder
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor2
           key: prestashop-${{ matrix.prestashop-version }}-php-${{ matrix.php-version }}
