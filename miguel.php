@@ -175,7 +175,7 @@ class Miguel extends Module
     /**
      * Create the structure of your form.
      */
-    protected function getConfigForm($show_environments = false)
+    protected function getConfigForm()
     {
         return [
             'form' => [
@@ -184,7 +184,7 @@ class Miguel extends Module
                 'icon' => 'icon-cogs',
                 ],
                 'input' => array_filter([
-                    $show_environments ? [
+                    [
                         'type' => 'select',
                         'label' => $this->l('Miguel server environment'),
                         'name' => MiguelSettings::API_SERVER_KEY,
@@ -200,24 +200,24 @@ class Miguel extends Module
                             'id' => 'id',
                             'name' => 'name',
                         ],
-                    ] : false,
-                    $show_environments ? [
+                    ],
+                    [
                         'type' => 'text',
                         'label' => $this->l('Miguel server\'s custom address'),
                         'name' => MiguelSettings::API_SERVER_OWN_KEY,
                         'desc' => $this->l('The address will be used if you have chosen a custom production environment.'),
-                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_OWN) ? ('input_server_own') : ('')),
+                        'class' => 'input_server',
                         'default_value' => '',
                         'hint' => $this->l('Contact us to get the address.'),
                         'visible' => false,
-                    ] : false,
+                    ],
                     [
                         'type' => 'text',
                         'label' => $this->l('API key'),
                         'name' => MiguelSettings::API_TOKEN_PRODUCTION_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => ((MiguelSettings::getServer() != MiguelSettings::ENV_PROD) ? ('input_server_production') : ('')),
+                        'class' => 'input_server',
                     ],
                     [
                         'type' => 'text',
@@ -225,7 +225,7 @@ class Miguel extends Module
                         'name' => MiguelSettings::API_TOKEN_STAGING_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_STAGING) ? ('input_server_staging') : ('')),
+                        'class' => 'input_server',
                     ],
                     [
                         'type' => 'text',
@@ -233,7 +233,7 @@ class Miguel extends Module
                         'name' => MiguelSettings::API_TOKEN_TEST_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_TEST) ? ('input_server_test') : ('')),
+                        'class' => 'input_server',
                     ],
                     [
                         'type' => 'text',
@@ -241,7 +241,7 @@ class Miguel extends Module
                         'name' => MiguelSettings::API_TOKEN_OWN_KEY,
                         'hint' => $this->l('To obtain an API key, use the link from the Documentation.'),
                         'desc' => $this->l('Using the API key, your e-shop will securely communicate with our server.'),
-                        'class' => 'input_server', // ((MiguelSettings::getServer() != MiguelSettings::ENV_OWN) ? ('input_server_own') : ('')),
+                        'class' => 'input_server',
                     ],
                     [
                         'type' => 'select',

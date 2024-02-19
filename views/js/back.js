@@ -12,30 +12,52 @@
 *  @license LICENSE.txt
 */
 
-function setInputServer(){
-   var api_server = $('#API_SERVER').val();
-  $(".input_server").each(function() {
-    var input_id = $(this).attr('name');
-    //console.log(input_id + ' '+api_server);
-    if(input_id == api_server) {
-      $(this).parent().parent().css( "display", "" );
-    }
-    else {
-      if(input_id == "API_SERVER_OWN" && api_server == "API_TOKEN_OWN")
-        $(this).parent().parent().css( "display", "" );
-      else
-        $(this).parent().parent().css( "display", "none" );
+function tokenInputNameForServer(server) {
+  if (server == 'prod') {
+    server = 'production';
+  }
+
+  return "MIGUEL_API_TOKEN_" + server.toUpperCase();
+}
+
+function setInputServer(apiServer) {
+  const tokenInputName = tokenInputNameForServer(apiServer);
+
+  $(".input_server").each(function () {
+    const inputName = $(this).attr('name');
+
+    if (inputName == tokenInputName) {
+      $(this).parent().parent().css("display", "");
+    } else {
+      if (inputName == "MIGUEL_API_SERVER_OWN" && apiServer == "own") {
+        $(this).parent().parent().css("display", "");
+      } else {
+        $(this).parent().parent().css("display", "none");
+      }
     }
   });
 }
 
-$(document).ready(function(){
+function updateServerInput(allowOtherEnvironments) {
+  const apiServer = $('#MIGUEL_API_SERVER').val();
 
-  $('#API_SERVER').on('change', function() {
-    setInputServer();
+  if (allowOtherEnvironments) {
+    setInputServer(apiServer);
+  } else {
+    setInputServer('prod');
+    $('#MIGUEL_API_SERVER').parent().parent().css("display", "none");
+  }
+}
+
+$(document).ready(function () {
+  const allowOtherEnvironments = localStorage.getItem('MIGUEL_ALLOW_OTHER_ENVIRONMENTS') === 'true';
+
+  $('#MIGUEL_API_SERVER').on('change', function () {
+    updateServerInput(allowOtherEnvironments);
   });
 
-  setInputServer();
+  updateServerInput(allowOtherEnvironments);
+
   $(".form-wrapper").toggle(); // zviditelním nastavení
 
 });
