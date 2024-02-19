@@ -275,11 +275,11 @@ class Miguel extends Module
                         'values' => [
                             [
                                 'id' => 'active_on',
-                                'value' => 1,
+                                'value' => true,
                             ],
                             [
                                 'id' => 'active_off',
-                                'value' => 0,
+                                'value' => false,
                             ],
                         ],
                     ],
