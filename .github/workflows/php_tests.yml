@@ -123,14 +123,14 @@ jobs:
             prestashop-version: '1.7.8.x'
             phpunit-version: '^7.5'
           # PrestaShop v8.0.x
-          - php-version: '7.3'
+          - php-version: '7.2'
             prestashop-version: '8.0.x'
             phpunit-version: '^8'
           - php-version: '8.1'
             prestashop-version: '8.0.x'
             phpunit-version: '^9'
           # PrestaShop v8.1.x
-          - php-version: '7.3'
+          - php-version: '7.2'
             prestashop-version: '8.1.x'
             phpunit-version: '^8'
           - php-version: '8.1'

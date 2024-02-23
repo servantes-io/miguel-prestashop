@@ -1,0 +1,23 @@
+name: Prestashop Validation
+
+on:
+  workflow_run:
+    workflows: [PHP tests]
+    types: [completed]
+    branches: [master]
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package
+        run: make build-zip
+
+      - name: send module to validator
+        uses: PrestaShopCorp/github-action-validator@dev
+        with:
+            validator_api_key: ${{ vars.VALIDATOR_API_KEY }}
+            github_link: servantes-io/miguel-prestashop
+            github_branch: ${{ github.ref }}
