@@ -1,0 +1,50 @@
+# Apache 2.2
+<IfModule !mod_authz_core.c>
+    <Files *.php>
+        order allow,deny
+        deny from all
+    </Files>
+
+    <Files *.log>
+        order allow,deny
+        deny from all
+    </Files>
+
+    <Files "order-state-callback.php">
+        Order Allow,Deny
+        Allow from all
+    </Files>
+
+    <Files "orders.php">
+        Order Allow,Deny
+        Allow from all
+    </Files>
+
+    <Files "products.php">
+        Order Allow,Deny
+        Allow from all
+    </Files>
+</IfModule>
+
+# Apache 2.4
+<IfModule mod_authz_core.c>
+    <Files *.php>
+        Require all denied
+    </Files>
+
+    <Files *.log>
+        Require all denied
+    </Files>
+
+    <Files "order-state-callback.php">
+        Require all granted
+    </Files>
+
+    <Files "orders.php">
+        Require all granted
+    </Files>
+
+    <Files "products.php">
+        Require all granted
+    </Files>
+</IfModule>
