@@ -17,15 +17,15 @@
 tato stránka slouží jako API a vrací seznamu názvu produktů
 je nutné se ověřit pomocí tokenu
 */
-
-if (!defined('_PS_VERSION_')) {
-    exit;
-}
-
 header('Content-Type: application/json; charset=UTF-8');
 
 include_once '../../config/config.inc.php';
 include_once 'miguel.php';
+
+// required thing for PrestaShop validator (needs to be after config.inc.php)
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 $module = new Miguel();
 $context = Context::getContext();
