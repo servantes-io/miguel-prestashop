@@ -614,7 +614,11 @@ class Miguel extends Module
         $updated_orders = [];
         foreach ($result as $key => $order) {
             $params = ['id_order' => $order['id_order'], 'getUpdatedOrders' => true];
-            $updated_orders[] = $this->createOrderDetailArray($params);
+
+            $order_data = $this->createOrderDetailArray($params);
+            if ($order_data) {
+                $updated_orders[] = $order_data;
+            }
         }
 
         return $updated_orders;
