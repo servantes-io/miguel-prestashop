@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [PHP tests]
     types: [completed]
-    branches: [master]
+    branches: [main]
 
 jobs:
   validation:
