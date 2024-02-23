@@ -12,7 +12,9 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
-define('_LOGGER_', 1);
+
+// uncomment this line for debugging (look for debug.log in the module directory)
+// define('_LOGGER_', 1);
 
 if (!defined('_PS_VERSION_')) {
     exit;
