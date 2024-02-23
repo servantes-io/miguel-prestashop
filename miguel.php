@@ -26,8 +26,8 @@ class Miguel extends Module
 {
     public const HOOKS = [
         'header',
-        'actionOrderStatusUpdate', // volá se při updatu objednávky
-        'displayCustomerAccount', // volá se při najetí do účtu
+        'actionOrderStatusUpdate', // called when the order status is changed
+        'displayCustomerAccount', // called when the customer account is displayed
     ];
 
     private $_logger;
@@ -337,6 +337,8 @@ class Miguel extends Module
 
     /**
      * Add the CSS & JavaScript files you want to be added on the FO.
+     *
+     * @return void
      */
     public function hookHeader()
     {
@@ -609,7 +611,7 @@ class Miguel extends Module
     {
         $date_upd = date('Y-m-d H:i:s', strtotime($updated_since));
 
-        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `date_upd` >= "' . $date_upd . '"';
+        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `date_upd` >= "' . pSQL($date_upd) . '"';
         $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
@@ -664,7 +666,7 @@ class Miguel extends Module
             return 'auto change not set';
         }
 
-        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `reference` = "' . $order_code . '"';
+        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `reference` = "' . pSQL($order_code) . '"';
         $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
