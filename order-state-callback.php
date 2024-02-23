@@ -17,6 +17,10 @@
 tato stránka slouží jako API, pro automatickou změnu stavů v PS
 */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 header('Content-Type: application/json; charset=UTF-8');
 
 include_once '../../config/config.inc.php';

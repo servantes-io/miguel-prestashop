@@ -12,6 +12,10 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 class MiguelSettings
 {
     const API_TOKEN_PRODUCTION_KEY = 'MIGUEL_API_TOKEN_PRODUCTION';

@@ -12,6 +12,10 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 $sql = [];
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel` (
