@@ -21,6 +21,8 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once 'src/utils/miguel-settings.php';
+include_once 'src/utils/miguel-api-response.php';
+include_once 'src/utils/miguel-api-error.php';
 
 class Miguel extends Module
 {
@@ -794,6 +796,31 @@ class Miguel extends Module
         }
 
         return $orders;
+    }
+
+    /**
+     * @return true|MiguelApiResponse
+     */
+    public function validateApiAccess()
+    {
+        $configuration = $this->getCurrentApiConfiguration();
+        $token = $this->getBearerToken();
+
+        if (false == $token) {
+            return MiguelApiResponse::error(MiguelApiError::apiKeyNotSet());
+        } elseif (false == $configuration) {
+            return MiguelApiResponse::error(MiguelApiError::configurationNotSet());
+        } elseif (0 == $configuration['api_enable']) {
+            return MiguelApiResponse::error(MiguelApiError::moduleDisabled());
+        } elseif (1 == $configuration['api_enable']) {
+            if ($configuration['token'] == $token) {
+                return true;
+            } else {
+                return MiguelApiResponse::error(MiguelApiError::apiKeyInvalid());
+            }
+        } else {
+            return MiguelApiResponse::error(MiguelApiError::unknownError());
+        }
     }
 
     /**
