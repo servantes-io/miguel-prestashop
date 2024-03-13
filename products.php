@@ -30,32 +30,12 @@ if (!defined('_PS_VERSION_')) {
 $module = new Miguel();
 $context = Context::getContext();
 $context->controller = new FrontController();
-$configuration = $module->getCurrentApiConfiguration();
-$token = $module->getBearerToken();
 
-$output = [
-    'result' => false,
-    'debug' => 'unexpected state',
-];
-
-if (false == $token) {
-    $output['result'] = false;
-    $output['debug'] = 'token not set';
-} elseif (false == $configuration) {
-    $output['result'] = false;
-    $output['debug'] = 'configuration not set';
-} elseif (0 == $configuration['api_enable']) {
-    $output['result'] = false;
-    $output['debug'] = 'api disable';
-} elseif (1 == $configuration['api_enable']) {
-    if ($configuration['token'] == $token) {
-        $output['result'] = true;
-        $output['debug'] = '';
-        $output['products'] = $module->getAllProducts();
-    } else {
-        $output['result'] = false;
-        $output['debug'] = 'token not valid';
-    }
+$valid = $module->validateApiAccess();
+if ($valid !== true) {
+    echo json_encode($valid, JSON_PRETTY_PRINT);
+    exit;
 }
 
+$output = MiguelApiResponse::success($module->getAllProducts(), 'products');
 echo json_encode($output, JSON_PRETTY_PRINT);
