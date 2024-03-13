@@ -39,11 +39,13 @@ jobs:
       - name: Run Header Stamp in Dry Run mode
         run: php vendor/bin/header-stamp --license=LICENSE.txt --exclude=.github,node_modules,vendor,tests,_dev,run,composer.json --dry-run
   php-linter:
-    name: PHP Syntax check 7.2|7.3|7.4|8.0|8.1|8.2
+    name: PHP Syntax check 7.1|7.2|7.3|7.4|8.0|8.1|8.2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: PHP syntax checker 7.1
+        uses: prestashop/github-action-php-lint/7.1@master
       - name: PHP syntax checker 7.2
         uses: prestashop/github-action-php-lint/7.2@master
       - name: PHP syntax checker 7.3

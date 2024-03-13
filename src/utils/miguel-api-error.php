@@ -18,10 +18,16 @@ if (!defined('_PS_VERSION_')) {
 
 class MiguelApiError implements JsonSerializable
 {
+    /**
+     * @var string
+     */
     private $code;
+    /**
+     * @var string
+     */
     private $message;
 
-    public function __construct($code, $message)
+    public function __construct(string $code, string $message)
     {
         $this->code = $code;
         $this->message = $message;
@@ -29,7 +35,7 @@ class MiguelApiError implements JsonSerializable
 
     // JsonSerializable
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return (object) [
             'code' => $this->code,
@@ -37,49 +43,49 @@ class MiguelApiError implements JsonSerializable
         ];
     }
 
-    public function getCode()
+    public function getCode(): string
     {
         return $this->code;
     }
 
-    public function getMessage()
+    public function getMessage(): string
     {
         return $this->message;
     }
 
     // Make functions
 
-    public static function apiKeyNotSet()
+    public static function apiKeyNotSet(): MiguelApiError
     {
         return new self('api_key.not_set', 'API key not set');
     }
 
-    public static function apiKeyInvalid()
+    public static function apiKeyInvalid(): MiguelApiError
     {
         return new self('api_key.invalid', 'API key invalid');
     }
 
-    public static function moduleDisabled()
+    public static function moduleDisabled(): MiguelApiError
     {
         return new self('module.disabled', 'Module is disabled');
     }
 
-    public static function configurationNotSet()
+    public static function configurationNotSet(): MiguelApiError
     {
         return new self('configuration.not_set', 'Configuration not set');
     }
 
-    public static function argumentNotSet($argument)
+    public static function argumentNotSet($argument): MiguelApiError
     {
-        return new self('argument.not_set', 'Argument $argument not set');
+        return new self('argument.not_set', "Argument $argument not set");
     }
 
-    public static function invalidPayload($message)
+    public static function invalidPayload($message): MiguelApiError
     {
-        return new self('payload.invalid', 'Invalid payload: $message');
+        return new self('payload.invalid', "Invalid payload: $message");
     }
 
-    public static function unknownError()
+    public static function unknownError(): MiguelApiError
     {
         return new self('unknown.error', 'Unknown error');
     }

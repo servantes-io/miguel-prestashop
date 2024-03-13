@@ -36,7 +36,7 @@ class MiguelSettings
     /**
      * @return array<string,mixed>
      */
-    public static function getDefaultValues()
+    public static function getDefaultValues(): array
     {
         return [
             self::API_TOKEN_PRODUCTION_KEY => '',
@@ -108,10 +108,8 @@ class MiguelSettings
 
     /**
      * Returns whether the module is enabled or not
-     *
-     * @return bool
      */
-    public static function getEnabled()
+    public static function getEnabled(): bool
     {
         return Configuration::get(self::API_ENABLE_KEY);
     }

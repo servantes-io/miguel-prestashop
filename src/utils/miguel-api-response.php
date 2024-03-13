@@ -40,40 +40,34 @@ class MiguelApiResponse implements JsonSerializable
      * @param mixed $data
      * @param string $data_key
      */
-    public function __construct($result, $data, $data_key)
+    public function __construct(bool $result, $data, string $data_key)
     {
         $this->result = $result;
         $this->data = $data;
         $this->data_key = $data_key;
     }
 
-    /**
-     * @return bool
-     */
-    public function getResult()
+    public function getResult(): bool
     {
         return $this->result;
     }
 
     /**
-     * @return mixed
+     * @return mixed (MiguelApiError or mixed data, PHP 7.X does not allow to convert class to mixed type)
      */
     public function getData()
     {
         return $this->data;
     }
 
-    /**
-     * @return string
-     */
-    public function getDataKey()
+    public function getDataKey(): string
     {
         return $this->data_key;
     }
 
     // JsonSerializable
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return (object) [
             'result' => $this->result,
@@ -84,23 +78,12 @@ class MiguelApiResponse implements JsonSerializable
 
     // Make functions
 
-    /**
-     * @param mixed $data
-     * @param string $data_key
-     *
-     * @return MiguelApiResponse
-     */
-    public static function success($data, $data_key)
+    public static function success(mixed $data, string $data_key): MiguelApiResponse
     {
         return new self(true, $data, $data_key);
     }
 
-    /**
-     * @param MiguelApiError $error
-     *
-     * @return MiguelApiResponse
-     */
-    public static function error($error)
+    public static function error(MiguelApiError $error): MiguelApiResponse
     {
         return new self(false, $error, 'error');
     }
