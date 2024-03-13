@@ -607,6 +607,9 @@ class Miguel extends Module
         return $all_products_ret;
     }
 
+    /**
+     * @param string $updated_since ISO 8601 date
+     */
     public function getUpdatedOrders($updated_since)
     {
         $date_upd = date('Y-m-d H:i:s', strtotime($updated_since));
