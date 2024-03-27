@@ -13,6 +13,9 @@
  *  @license LICENSE.txt
  */
 
+use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiResponse;
+
 /*
 tato stránka slouží jako API, pro automatickou změnu stavů v PS
 */
