@@ -158,6 +158,21 @@ jobs:
           tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
+      - name: Cache vendor folder
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: php-${{ hashFiles('composer.lock') }}
+
+      - name: Cache composer folder
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: php-composer-cache
+
+      - name: Composer install
+        run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
+
       - name: Test MySQL Connection
         uses: nick-fields/retry@v3
         with:

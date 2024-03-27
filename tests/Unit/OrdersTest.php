@@ -17,7 +17,7 @@ namespace Tests\Unit;
 
 use GuzzleHttp\Client;
 
-final class OrdersTest extends \DatabaseTestCase
+final class OrdersTest extends DatabaseTestCase
 {
     private $client;
 

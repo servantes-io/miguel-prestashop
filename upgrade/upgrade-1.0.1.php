@@ -16,6 +16,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use Miguel\Utils\MiguelSettings;
+
 function upgrade_module_1_0_1($module)
 {
     // migrate settings keys

@@ -12,6 +12,8 @@
  *  @copyright  2022 - 2024 Servantes
  *  @license LICENSE.txt
  */
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 if (file_exists(__DIR__ . '/../../vendor2/PrestaShop/tests-legacy')) {
     require_once __DIR__ . '/../../vendor2/PrestaShop/tests-legacy/bootstrap.php';
 } else {
@@ -29,4 +31,4 @@ require_once __DIR__ . '/DatabaseTestCase.php';
 $module = new Miguel();
 $module->install();
 
-MiguelSettings::reset();
+Miguel\Utils\MiguelSettings::reset();
