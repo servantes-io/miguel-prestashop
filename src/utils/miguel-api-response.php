@@ -67,9 +67,10 @@ class MiguelApiResponse implements JsonSerializable
 
     // JsonSerializable
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
-        return (object) [
+        return [
             'result' => $this->result,
             'debug' => '', // backward compatibility
             $this->data_key => $this->data,
