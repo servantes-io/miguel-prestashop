@@ -60,6 +60,8 @@ And you’re done.
 
 Now the module should be connected to Miguel, all that's left is to create products and sell them.
 
+For more info look at [docs](https://docs.miguel.servantes.cz/en/docs/platforms/prestashop/).
+
 ## Information about the module
 
 ### Supported versions
