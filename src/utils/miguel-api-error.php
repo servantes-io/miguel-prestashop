@@ -35,7 +35,7 @@ class MiguelApiError implements JsonSerializable
 
     // JsonSerializable
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize()
     {
         return (object) [
             'code' => $this->code,

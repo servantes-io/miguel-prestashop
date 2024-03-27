@@ -38,8 +38,9 @@ if ($valid !== true) {
 }
 
 if (false == Tools::getIsset('updated_since')) {
-    return MiguelApiResponse::error(MiguelApiError::argumentNotSet('updated_since'));
+    $output = MiguelApiResponse::error(MiguelApiError::argumentNotSet('updated_since'));
+} else {
+    $output = MiguelApiResponse::success($module->getUpdatedOrders(Tools::getValue('updated_since')), 'orders');
 }
-$output = MiguelApiResponse::success($module->getUpdatedOrders(Tools::getValue('updated_since')), 'orders');
 
 echo json_encode($output, JSON_PRETTY_PRINT);

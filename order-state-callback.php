@@ -40,7 +40,9 @@ $json = Tools::file_get_contents('php://input');
 $data = json_decode($json, true);
 
 if (false == array_key_exists('code', $data)) {
-    return MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
+    $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
+} else {
+    $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
 }
-$output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
+
 echo json_encode($output);

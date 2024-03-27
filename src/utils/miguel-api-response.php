@@ -67,7 +67,7 @@ class MiguelApiResponse implements JsonSerializable
 
     // JsonSerializable
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize()
     {
         return (object) [
             'result' => $this->result,
@@ -78,7 +78,7 @@ class MiguelApiResponse implements JsonSerializable
 
     // Make functions
 
-    public static function success(mixed $data, string $data_key): MiguelApiResponse
+    public static function success($data, string $data_key): MiguelApiResponse
     {
         return new self(true, $data, $data_key);
     }
