@@ -15,7 +15,9 @@
 
 namespace Tests\Unit;
 
-final class MiguelTest extends \DatabaseTestCase
+use Miguel\Utils\MiguelApiResponse;
+
+final class MiguelTest extends DatabaseTestCase
 {
     private $sut;
 
@@ -37,7 +39,7 @@ final class MiguelTest extends \DatabaseTestCase
         $res = $this->sut->validateApiAccess();
 
         // VERIFY
-        $this->assertInstanceOf(\MiguelApiResponse::class, $res);
+        $this->assertInstanceOf(MiguelApiResponse::class, $res);
 
         $this->assertEquals(false, $res->getResult());
 

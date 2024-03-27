@@ -13,6 +13,8 @@
  *  @license LICENSE.txt
  */
 
+use Miguel\Utils\MiguelApiResponse;
+
 /*
 tato stránka slouží jako API a vrací seznamu názvu produktů
 je nutné se ověřit pomocí tokenu
