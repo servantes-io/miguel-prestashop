@@ -46,8 +46,8 @@ class MiguelPurchasedModuleFrontController extends ModuleFrontController
 
         $breadcrumb['links'][] = $this->addMyAccountToBreadcrumb();
         $breadcrumb['links'][] = [
-          'title' => $this->module->l('Purchased e-books'),
-          'url' => $this->context->link->getModuleLink('miguel', 'purchased'),
+            'title' => $this->module->l('Purchased e-books'),
+            'url' => $this->context->link->getModuleLink('miguel', 'purchased'),
         ];
 
         return $breadcrumb;
