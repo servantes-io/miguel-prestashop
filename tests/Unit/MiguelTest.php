@@ -16,6 +16,7 @@
 namespace Tests\Unit;
 
 use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelSettings;
 
 final class MiguelTest extends DatabaseTestCase
 {
@@ -51,8 +52,8 @@ final class MiguelTest extends DatabaseTestCase
     public function testFullConfig()
     {
         // SETUP
-        \MiguelSettings::save(\MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
-        \MiguelSettings::setEnabled(true);
+        MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
+        MiguelSettings::setEnabled(true);
 
         $_SERVER['Authorization'] = 'Bearer 1234';
 

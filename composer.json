@@ -5,10 +5,14 @@
         "php": ">=7.1.0"
     },
     "require-dev": {
-        "prestashop/php-dev-tools": "^4.3",
-        "phpunit/phpunit": "^9"
+        "prestashop/php-dev-tools": "^4.3 || ^3.16",
+        "phpunit/phpunit": "^7 || ^8 || ^9"
     },
     "autoload": {
         "psr-4": {"Miguel\\": "src/"}
+    },
+    "type": "prestashop-module",
+    "config": {
+        "prepend-autoloader": false
     }
 }

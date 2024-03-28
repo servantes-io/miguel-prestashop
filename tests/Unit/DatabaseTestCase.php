@@ -15,6 +15,7 @@
 
 namespace Tests\Unit;
 
+use Miguel\Utils\MiguelSettings;
 use PHPUnit\Framework\TestCase;
 
 class DatabaseTestCase extends TestCase
@@ -23,6 +24,6 @@ class DatabaseTestCase extends TestCase
     {
         parent::setUp();
 
-        \MiguelSettings::reset();
+        MiguelSettings::reset();
     }
 }

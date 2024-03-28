@@ -13,21 +13,22 @@
  *  @license LICENSE.txt
  */
 
-namespace Tests\Unit\utils;
+namespace Tests\Unit\Utils;
 
-require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
+use Miguel\Utils\MiguelSettings;
+use Tests\Unit\DatabaseTestCase;
 
-final class MiguelSettingsTest extends \DatabaseTestCase
+final class MiguelSettingsTest extends DatabaseTestCase
 {
     public function testSaveValue()
     {
         // PREPARE
-        $this->assertFalse(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
+        $this->assertFalse(\Configuration::get(MiguelSettings::API_ENABLE_KEY));
 
         // TEST
-        \MiguelSettings::setEnabled(true);
+        MiguelSettings::setEnabled(true);
 
         // VERIFY
-        $this->assertTrue(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
+        $this->assertTrue(\Configuration::get(MiguelSettings::API_ENABLE_KEY));
     }
 }
