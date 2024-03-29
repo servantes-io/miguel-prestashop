@@ -26,15 +26,21 @@ class MiguelApiResponse implements \JsonSerializable
     private $data_key;
 
     /**
+     * @var int
+     */
+    private $status;
+
+    /**
      * @param bool $result
      * @param mixed $data
      * @param string $data_key
      */
-    public function __construct(bool $result, $data, string $data_key)
+    public function __construct(bool $result, $data, string $data_key, int $status = 200)
     {
         $this->result = $result;
         $this->data = $data;
         $this->data_key = $data_key;
+        $this->status = $status;
     }
 
     public function getResult(): bool
@@ -53,6 +59,11 @@ class MiguelApiResponse implements \JsonSerializable
     public function getDataKey(): string
     {
         return $this->data_key;
+    }
+
+    public function getStatus(): int
+    {
+        return $this->status;
     }
 
     // JsonSerializable
@@ -74,8 +85,10 @@ class MiguelApiResponse implements \JsonSerializable
         return new self(true, $data, $data_key);
     }
 
-    public static function error(MiguelApiError $error): MiguelApiResponse
+    public static function error(MiguelApiError $error, ?int $status = null): MiguelApiResponse
     {
-        return new self(false, $error, 'error');
+        $status = $status != null ? $status : $error->getStatus();
+
+        return new self(false, $error, 'error', $status);
     }
 }

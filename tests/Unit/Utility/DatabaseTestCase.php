@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Unit\Utility;
 
 use Miguel\Utils\MiguelSettings;
 use PHPUnit\Framework\TestCase;

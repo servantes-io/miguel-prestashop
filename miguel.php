@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/vendor/autoload.php';
+
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
@@ -17,6 +19,7 @@ class Miguel extends Module
         'header',
         'actionOrderStatusUpdate', // called when the order status is changed
         'displayCustomerAccount', // called when the customer account is displayed
+        'moduleRoutes',
     ];
 
     private $_logger;
@@ -728,6 +731,21 @@ class Miguel extends Module
         ]);
 
         return $this->fetch('module:miguel/views/templates/hook/displayCustomerAccount.tpl');
+    }
+
+    public function hookModuleRoutes()
+    {
+        return [
+            'module-miguel-orders' => [
+                'rule' => 'modules/miguel/orders.php',
+                'keywords' => [],
+                'controller' => 'ApiOrders',
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'miguel',
+                ],
+            ],
+        ];
     }
 
     private function arrayWithCode($arr, $code)

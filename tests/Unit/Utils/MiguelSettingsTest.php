@@ -3,7 +3,7 @@
 namespace Tests\Unit\Utils;
 
 use Miguel\Utils\MiguelSettings;
-use Tests\Unit\DatabaseTestCase;
+use Tests\Unit\Utility\DatabaseTestCase;
 
 final class MiguelSettingsTest extends DatabaseTestCase
 {

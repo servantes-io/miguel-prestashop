@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
+use Tests\Unit\Utility\DatabaseTestCase;
 
 final class MiguelTest extends DatabaseTestCase
 {
