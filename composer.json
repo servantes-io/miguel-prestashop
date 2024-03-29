@@ -1,17 +1,20 @@
 {
     "author": "Servantes",
     "license": "MIT",
+    "type": "prestashop-module",
     "require": {
         "php": ">=7.1.0"
     },
     "require-dev": {
         "prestashop/php-dev-tools": "^4.3 || ^3.16",
-        "phpunit/phpunit": "^7 || ^8 || ^9"
+        "phpunit/phpunit": "^7 || ^8 || ^9",
+        "prestashop/autoindex": "^2.1 || ^1",
+        "friendsofphp/php-cs-fixer": "^3.52 || ^2"
     },
     "autoload": {
-        "psr-4": {"Miguel\\": "src/"}
+        "psr-4": {"Miguel\\": "src/"},
+        "classmap": ["miguel.php"]
     },
-    "type": "prestashop-module",
     "config": {
         "prepend-autoloader": false
     }
