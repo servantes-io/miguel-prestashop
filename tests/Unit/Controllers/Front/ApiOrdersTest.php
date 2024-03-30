@@ -6,7 +6,9 @@ class ApiOrdersTest extends ApiTestCase
 {
     public function testGetOrders(): void
     {
-        static::createClient()->request('GET', '/modules/miguel/orders.php');
+        $route = $this->router->generate('module-miguel-orders');
+        static::createClient()->request('GET', $route);
+
         $this->assertResponseIsSuccessful();
     }
 }
