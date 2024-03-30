@@ -168,8 +168,16 @@ jobs:
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
 
-      - name: Create module folder
-        run: mkdir -p vendor2/PrestaShop/modules/miguel
+      - name: Install module
+        run: |
+          bash .github/scripts/build-zip.sh
+          unzip -q miguel.zip -d vendor2/PrestaShop/modules/
+          ls -al vendor2/PrestaShop/modules/
+          php vendor2/PrestaShop/bin/console prestashop:module install miguel
+
+          cp -r tests vendor2/PrestaShop/modules/miguel/
+          ls -al vendor2/PrestaShop/modules/miguel/
 
       - name: Run PHPUnit
-        run: phpunit -c ./tests/Unit/phpunit.xml
+        run: composer exec phpunit -- -c ./tests/Unit/phpunit.xml
+        working-directory: vendor2/PrestaShop/modules/miguel

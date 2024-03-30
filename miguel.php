@@ -736,7 +736,7 @@ class Miguel extends Module
     public function hookModuleRoutes()
     {
         return [
-            'module-miguel-orders' => [
+            'module_miguel_orders' => [
                 'rule' => 'modules/miguel/orders.php',
                 'keywords' => [],
                 'controller' => 'ApiOrders',

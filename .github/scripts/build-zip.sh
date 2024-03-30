@@ -19,7 +19,7 @@ remove_space_after_phpdoc() {
 
 tmpdir=$(mktemp -d)
 ignore=".git .github .idea .vscode .gitignore .php-cs-fixer.dist.php .php-cs-fixer.cache composer.lock assets tests run doc vendor2 docker-compose.yml docker-compose.test.yml Makefile *.zip"
-result="$(PWD)/miguel.zip"
+result="$(pwd)/miguel.zip"
 
 rm -rf "$result"
 

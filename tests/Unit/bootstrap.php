@@ -2,15 +2,17 @@
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-if (file_exists(__DIR__ . '/../../vendor2/PrestaShop/tests-legacy')) {
-    require_once __DIR__ . '/../../vendor2/PrestaShop/tests-legacy/bootstrap.php';
+define('MIGUEL_PS_ROOT_DIR', dirname(__DIR__, 4));
+
+if (file_exists(MIGUEL_PS_ROOT_DIR . '/tests-legacy')) {
+    require_once MIGUEL_PS_ROOT_DIR . '/tests-legacy/bootstrap.php';
 } else {
-    require_once __DIR__ . '/../../vendor2/PrestaShop/tests/Unit/bootstrap.php';
+    require_once MIGUEL_PS_ROOT_DIR . '/tests/Unit/bootstrap.php';
 }
 
-require_once __DIR__ . '/../../vendor2/PrestaShop/config/config.inc.php';
-require_once __DIR__ . '/../../vendor2/PrestaShop/config/defines_uri.inc.php';
-require_once __DIR__ . '/../../vendor2/PrestaShop/init.php';
+require_once MIGUEL_PS_ROOT_DIR . '/config/config.inc.php';
+require_once MIGUEL_PS_ROOT_DIR . '/config/defines_uri.inc.php';
+require_once MIGUEL_PS_ROOT_DIR . '/init.php';
 
 require_once __DIR__ . '/../../miguel.php';
 
