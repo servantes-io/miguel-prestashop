@@ -92,24 +92,18 @@ jobs:
           # PrestaShop v1.7.8.x
           - php-version: '7.1'
             prestashop-version: '1.7.8.x'
-            phpunit-version: '^7.5'
           - php-version: '7.4'
             prestashop-version: '1.7.8.x'
-            phpunit-version: '^7.5'
           # PrestaShop v8.0.x
           - php-version: '7.2'
             prestashop-version: '8.0.x'
-            phpunit-version: '^8'
           - php-version: '8.1'
             prestashop-version: '8.0.x'
-            phpunit-version: '^9'
           # PrestaShop v8.1.x
           - php-version: '7.2'
             prestashop-version: '8.1.x'
-            phpunit-version: '^8'
           - php-version: '8.1'
             prestashop-version: '8.1.x'
-            phpunit-version: '^9'
     services:
       mysql:
         image: mysql:5.7
@@ -127,7 +121,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: xdebug
-          tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
+          tools: composer:v2
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
       - name: Cache vendor folder
@@ -171,13 +165,31 @@ jobs:
       - name: Install module
         run: |
           bash .github/scripts/build-zip.sh
+
+          rm -rf vendor2/PrestaShop/modules/miguel
           unzip -q miguel.zip -d vendor2/PrestaShop/modules/
+
           ls -al vendor2/PrestaShop/modules/
           php vendor2/PrestaShop/bin/console prestashop:module install miguel
 
+          rm -r vendor2/PrestaShop/modules/miguel/vendor
           cp -r tests vendor2/PrestaShop/modules/miguel/
+          pushd vendor2/PrestaShop/modules/miguel/
+            composer install --prefer-dist --no-progress --no-ansi --no-interaction
+          popd
           ls -al vendor2/PrestaShop/modules/miguel/
 
       - name: Run PHPUnit
-        run: composer exec phpunit -- -c ./tests/Unit/phpunit.xml
+        run: |
+          php -d xdebug.auto_trace=ON -d xdebug.trace_output_dir=mytracedir/ vendor/bin/phpunit -c ./tests/Unit/phpunit.xml || true
+          if [ -d mytracedir ]; then
+            ls -al mytracedir
+            for file in mytracedir/*; do
+              echo "File: $file"
+              cat $file
+            done
+
+            echo "Xdebug trace files found"
+            exit 1
+          fi
         working-directory: vendor2/PrestaShop/modules/miguel

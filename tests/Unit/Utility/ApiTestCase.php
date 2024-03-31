@@ -34,6 +34,11 @@ abstract class ApiTestCase extends WebTestCase
         $this->router = self::$container->get('router');
     }
 
+    public function getContext(): \Context
+    {
+        return static::getContext();
+    }
+
     /**
      * @param string $route
      * @param array $params
