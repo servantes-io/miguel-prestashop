@@ -1,21 +1,12 @@
 <?php
-/**
- * 2024 Servantes
- *
- * This file is licenced under the Software License Agreement.
- * With the purchase or the installation of the software in your application
- * you accept the licence agreement.
- *
- * You must not modify, adapt or create derivative works of this source code
- *
- *  @author Roman Kříž <roman.kriz@servantes.cz>
- *  @copyright  2022 - 2024 Servantes
- *  @license LICENSE.txt
- */
 
 namespace Tests\Unit;
 
-final class MiguelTest extends \DatabaseTestCase
+use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelSettings;
+use Tests\Unit\Utility\DatabaseTestCase;
+
+final class MiguelTest extends DatabaseTestCase
 {
     private $sut;
 
@@ -37,7 +28,7 @@ final class MiguelTest extends \DatabaseTestCase
         $res = $this->sut->validateApiAccess();
 
         // VERIFY
-        $this->assertInstanceOf(\MiguelApiResponse::class, $res);
+        $this->assertInstanceOf(MiguelApiResponse::class, $res);
 
         $this->assertEquals(false, $res->getResult());
 
@@ -49,8 +40,8 @@ final class MiguelTest extends \DatabaseTestCase
     public function testFullConfig()
     {
         // SETUP
-        \MiguelSettings::save(\MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
-        \MiguelSettings::setEnabled(true);
+        MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
+        MiguelSettings::setEnabled(true);
 
         $_SERVER['Authorization'] = 'Bearer 1234';
 

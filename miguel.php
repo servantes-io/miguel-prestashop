@@ -1,17 +1,10 @@
 <?php
-/**
- * 2023 Servantes
- *
- * This file is licenced under the Software License Agreement.
- * With the purchase or the installation of the software in your application
- * you accept the licence agreement.
- *
- * You must not modify, adapt or create derivative works of this source code
- *
- *  @author Pavel Vejnar <vejnar.p@gmail.com>
- *  @copyright  2022 - 2023 Servantes
- *  @license LICENSE.txt
- */
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
 // define('_LOGGER_', 1);
@@ -20,16 +13,13 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once 'src/utils/miguel-settings.php';
-include_once 'src/utils/miguel-api-response.php';
-include_once 'src/utils/miguel-api-error.php';
-
 class Miguel extends Module
 {
     public const HOOKS = [
         'header',
         'actionOrderStatusUpdate', // called when the order status is changed
         'displayCustomerAccount', // called when the customer account is displayed
+        'moduleRoutes',
     ];
 
     private $_logger;
@@ -184,8 +174,8 @@ class Miguel extends Module
         return [
             'form' => [
                 'legend' => [
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
+                    'title' => $this->l('Settings'),
+                    'icon' => 'icon-cogs',
                 ],
                 'input' => array_filter([
                     [
@@ -741,6 +731,21 @@ class Miguel extends Module
         ]);
 
         return $this->fetch('module:miguel/views/templates/hook/displayCustomerAccount.tpl');
+    }
+
+    public function hookModuleRoutes()
+    {
+        return [
+            'module_miguel_orders' => [
+                'rule' => 'modules/miguel/orders.php',
+                'keywords' => [],
+                'controller' => 'ApiOrders',
+                'params' => [
+                    'fc' => 'module',
+                    'module' => 'miguel',
+                ],
+            ],
+        ];
     }
 
     private function arrayWithCode($arr, $code)

@@ -11,7 +11,6 @@ parameters:
 		- ../../views
 		- ../../miguel.php
 		- ../../order-state-callback.php
-		- ../../orders.php
 		- ../../products.php
 	reportUnmatchedIgnoredErrors: false
 

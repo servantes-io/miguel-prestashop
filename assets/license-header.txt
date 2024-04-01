@@ -1,4 +1,3 @@
-<?php
 /**
  * 2024 Servantes
  *
@@ -12,15 +11,3 @@
  *  @copyright  2022 - 2024 Servantes
  *  @license LICENSE.txt
  */
-
-use PHPUnit\Framework\TestCase;
-
-class DatabaseTestCase extends TestCase
-{
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        \MiguelSettings::reset();
-    }
-}

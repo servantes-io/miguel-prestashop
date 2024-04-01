@@ -1,17 +1,7 @@
 <?php
-/**
- * 2024 Servantes
- *
- * This file is licenced under the Software License Agreement.
- * With the purchase or the installation of the software in your application
- * you accept the licence agreement.
- *
- * You must not modify, adapt or create derivative works of this source code
- *
- *  @author Roman Kříž <roman.kriz@servantes.cz>
- *  @copyright  2022 - 2024 Servantes
- *  @license LICENSE.txt
- */
+
+namespace Miguel\Utils;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -72,14 +62,14 @@ class MiguelSettings
     public static function reset()
     {
         foreach (self::getDefaultValues() as $key => $value) {
-            Configuration::updateValue($key, $value);
+            \Configuration::updateValue($key, $value);
         }
     }
 
     public static function deleteAll()
     {
         foreach (self::getAllKeys() as $key) {
-            Configuration::deleteByName($key);
+            \Configuration::deleteByName($key);
         }
     }
 
@@ -87,7 +77,7 @@ class MiguelSettings
     {
         $values = [];
         foreach (self::getAllKeys() as $key) {
-            $values[$key] = Configuration::get($key);
+            $values[$key] = \Configuration::get($key);
         }
 
         return $values;
@@ -101,7 +91,7 @@ class MiguelSettings
      */
     public static function save($key, $value)
     {
-        Configuration::updateValue($key, $value);
+        \Configuration::updateValue($key, $value);
     }
 
     // Custom getters and setters
@@ -111,12 +101,12 @@ class MiguelSettings
      */
     public static function getEnabled(): bool
     {
-        return Configuration::get(self::API_ENABLE_KEY);
+        return \Configuration::get(self::API_ENABLE_KEY);
     }
 
     public static function setEnabled($value)
     {
-        Configuration::updateValue(self::API_ENABLE_KEY, $value);
+        \Configuration::updateValue(self::API_ENABLE_KEY, $value);
     }
 
     /**
@@ -126,7 +116,7 @@ class MiguelSettings
      */
     public static function getServer()
     {
-        return Configuration::get(self::API_SERVER_KEY);
+        return \Configuration::get(self::API_SERVER_KEY);
     }
 
     /**
@@ -144,7 +134,7 @@ class MiguelSettings
             case MiguelSettings::ENV_TEST:
                 return 'https://miguel-test.servantes.cz';
             case MiguelSettings::ENV_OWN:
-                return Configuration::get(self::API_SERVER_OWN_KEY);
+                return \Configuration::get(self::API_SERVER_OWN_KEY);
         }
 
         return false;
@@ -159,13 +149,13 @@ class MiguelSettings
     {
         switch ($env) {
             case MiguelSettings::ENV_PROD:
-                return Configuration::get(self::API_TOKEN_PRODUCTION_KEY);
+                return \Configuration::get(self::API_TOKEN_PRODUCTION_KEY);
             case MiguelSettings::ENV_STAGING:
-                return Configuration::get(self::API_TOKEN_STAGING_KEY);
+                return \Configuration::get(self::API_TOKEN_STAGING_KEY);
             case MiguelSettings::ENV_TEST:
-                return Configuration::get(self::API_TOKEN_TEST_KEY);
+                return \Configuration::get(self::API_TOKEN_TEST_KEY);
             case MiguelSettings::ENV_OWN:
-                return Configuration::get(self::API_TOKEN_OWN_KEY);
+                return \Configuration::get(self::API_TOKEN_OWN_KEY);
         }
 
         return false;
@@ -178,9 +168,9 @@ class MiguelSettings
     {
         $new_state_id_raw = false;
         if ($miguel_only) {
-            $new_state_id_raw = Configuration::get(self::NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY);
+            $new_state_id_raw = \Configuration::get(self::NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY);
         } else {
-            $new_state_id_raw = Configuration::get(self::NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY);
+            $new_state_id_raw = \Configuration::get(self::NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY);
         }
 
         if ($new_state_id_raw === false) {
