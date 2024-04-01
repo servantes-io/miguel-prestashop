@@ -22,19 +22,18 @@ jobs:
         with:
           php-version: '8.2'
 
-      - name: Cache vendor folder
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: vendor
-          key: php-${{ hashFiles('composer.lock') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer cache (os:${{ runner.os }})
 
-      - name: Cache composer folder
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: php-composer-cache
-
-      - run: composer install
+      - name: Install dependencies
+        run: composer install --prefer-dist
 
       - name: Run Header Stamp in Dry Run mode
         run: php vendor/bin/header-stamp --license=LICENSE.txt --exclude=.github,node_modules,vendor,tests,_dev,run,composer.json --dry-run
@@ -67,22 +66,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache vendor folder
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: vendor
-          key: php-${{ hashFiles('composer.lock') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer cache (os:${{ runner.os }})
 
-      - name: Cache composer folder
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: php-composer-cache
-
-      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
+      - name: Install dependencies
+        run: composer install --prefer-dist
 
       - name: Run PHP CS Fixer
-        run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+        run: composer exec php-cs-fixer -- fix --dry-run --diff --verbose
 
   phpstan:
     name: PHPStan
@@ -98,19 +96,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache vendor folder
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
-          path: vendor
-          key: php-${{ hashFiles('composer.lock') }}
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer cache (os:${{ runner.os }})
 
-      - name: Cache composer folder
-        uses: actions/cache@v4
-        with:
-          path: ~/.composer/cache
-          key: php-composer-cache
-
-      - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
+      - name: Install dependencies
+        run: composer install --prefer-dist
 
       - name: Pull PrestaShop files (Tag ${{ matrix.presta-version }})
         run: docker run -tid --rm -v ps-volume:/var/www/html --name temp-ps prestashop/prestashop:${{ matrix.presta-version }}
@@ -127,24 +124,18 @@ jobs:
           # PrestaShop v1.7.8.x
           - php-version: '7.1'
             prestashop-version: '1.7.8.x'
-            phpunit-version: '^7.5'
           - php-version: '7.4'
             prestashop-version: '1.7.8.x'
-            phpunit-version: '^7.5'
           # PrestaShop v8.0.x
           - php-version: '7.2'
             prestashop-version: '8.0.x'
-            phpunit-version: '^8'
           - php-version: '8.1'
             prestashop-version: '8.0.x'
-            phpunit-version: '^9'
           # PrestaShop v8.1.x
           - php-version: '7.2'
             prestashop-version: '8.1.x'
-            phpunit-version: '^8'
           - php-version: '8.1'
             prestashop-version: '8.1.x'
-            phpunit-version: '^9'
     services:
       mysql:
         image: mysql:5.7
@@ -162,7 +153,7 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           coverage: xdebug
-          tools: composer:v2, phpunit:${{ matrix.phpunit-version }}
+          tools: composer:v2
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
       - name: Test MySQL Connection
@@ -176,7 +167,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor2
-          key: prestashop-${{ matrix.prestashop-version }}-php-${{ matrix.php-version }}
+          key: "prestashop (ps:${{ matrix.prestashop-version }};php:${{ matrix.php-version }})"
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
@@ -188,8 +179,23 @@ jobs:
         env:
           MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
 
-      - name: Create module folder
-        run: mkdir -p vendor2/PrestaShop/modules/miguel
+      - name: Install module
+        run: |
+          # create archive
+          bash .github/scripts/build-zip.sh
+
+          # unpack into correct place
+          rm -rf vendor2/PrestaShop/modules/miguel
+          unzip -q miguel.zip -d vendor2/PrestaShop/modules/
+
+          # install it to Prestashop
+          ls -al vendor2/PrestaShop/modules/
+          php vendor2/PrestaShop/bin/console prestashop:module install miguel
+
+          # add dev files
+          cp -r tests vendor2/PrestaShop/modules/miguel/
+          ls -al vendor2/PrestaShop/modules/miguel/
 
       - name: Run PHPUnit
-        run: phpunit -c ./tests/Unit/phpunit.xml
+        run: composer exec phpunit -- -c modules/miguel/tests/Unit/phpunit.xml
+        working-directory: vendor2/PrestaShop

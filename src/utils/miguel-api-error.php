@@ -35,7 +35,7 @@ class MiguelApiError implements JsonSerializable
 
     // JsonSerializable
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return [

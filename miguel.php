@@ -184,8 +184,8 @@ class Miguel extends Module
         return [
             'form' => [
                 'legend' => [
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
+                    'title' => $this->l('Settings'),
+                    'icon' => 'icon-cogs',
                 ],
                 'input' => array_filter([
                     [
