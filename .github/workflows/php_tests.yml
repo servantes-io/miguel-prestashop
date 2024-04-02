@@ -87,7 +87,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        presta-versions: ['1.7', '8.0', 'latest']
+        presta-version:
+          - '1.7'
+          - '8.0'
+          - '8.1'
+          - 'latest'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,8 +110,8 @@ jobs:
 
       - run: composer install --prefer-dist --no-progress --no-ansi --no-interaction
 
-      - name: Pull PrestaShop files (Tag ${{ matrix.presta-versions }})
-        run: docker run -tid --rm -v ps-volume:/var/www/html --name temp-ps prestashop/prestashop:${{ matrix.presta-versions }}
+      - name: Pull PrestaShop files (Tag ${{ matrix.presta-version }})
+        run: docker run -tid --rm -v ps-volume:/var/www/html --name temp-ps prestashop/prestashop:${{ matrix.presta-version }}
 
       - name : Run PHPStan
         run: docker run --rm --volumes-from temp-ps -v $PWD:/web/module -e _PS_ROOT_DIR_=/var/www/html --workdir=/web/module ghcr.io/phpstan/phpstan:1 analyse --configuration=/web/module/tests/phpstan/phpstan.neon --error-format github
