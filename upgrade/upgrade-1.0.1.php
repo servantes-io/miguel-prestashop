@@ -12,6 +12,9 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
+
+use Miguel\Utils\MiguelSettings;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }

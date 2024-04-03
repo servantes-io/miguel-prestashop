@@ -12,6 +12,13 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
+require_once 'src/utils/miguel-settings.php';
+require_once 'src/utils/miguel-api-response.php';
+require_once 'src/utils/miguel-api-error.php';
+
+use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
 // define('_LOGGER_', 1);
@@ -19,10 +26,6 @@
 if (!defined('_PS_VERSION_')) {
     exit;
 }
-
-require_once 'src/utils/miguel-settings.php';
-include_once 'src/utils/miguel-api-response.php';
-include_once 'src/utils/miguel-api-error.php';
 
 class Miguel extends Module
 {

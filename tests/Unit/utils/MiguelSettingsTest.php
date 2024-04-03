@@ -15,19 +15,22 @@
 
 namespace Tests\Unit\utils;
 
+use Miguel\Utils\MiguelSettings;
+use Tests\Utility\DatabaseTestCase;
+
 require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
 
-final class MiguelSettingsTest extends \DatabaseTestCase
+final class MiguelSettingsTest extends DatabaseTestCase
 {
     public function testSaveValue()
     {
         // PREPARE
-        $this->assertFalse(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
+        $this->assertFalse(\Configuration::get(MiguelSettings::API_ENABLE_KEY));
 
         // TEST
-        \MiguelSettings::setEnabled(true);
+        MiguelSettings::setEnabled(true);
 
         // VERIFY
-        $this->assertTrue(\Configuration::get(\MiguelSettings::API_ENABLE_KEY));
+        $this->assertTrue(\Configuration::get(MiguelSettings::API_ENABLE_KEY));
     }
 }

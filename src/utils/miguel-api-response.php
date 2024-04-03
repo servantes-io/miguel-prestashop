@@ -12,11 +12,14 @@
  *  @copyright  2022 - 2024 Servantes
  *  @license LICENSE.txt
  */
+
+namespace Miguel\Utils;
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class MiguelApiResponse implements JsonSerializable
+class MiguelApiResponse implements \JsonSerializable
 {
     /**
      * True when everything is ok, otherwise false.
@@ -67,7 +70,7 @@ class MiguelApiResponse implements JsonSerializable
 
     // JsonSerializable
 
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return [
