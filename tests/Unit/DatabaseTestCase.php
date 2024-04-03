@@ -21,6 +21,6 @@ class DatabaseTestCase extends TestCase
     {
         parent::setUp();
 
-        \MiguelSettings::reset();
+        MiguelSettings::reset();
     }
 }

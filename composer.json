@@ -1,11 +1,12 @@
 {
     "author": "Servantes",
     "license": "MIT",
+    "type": "prestashop-module",
     "require": {
         "php": ">=7.1.0"
     },
     "require-dev": {
-        "prestashop/php-dev-tools": "^4.3",
-        "phpunit/phpunit": "^9"
+        "prestashop/php-dev-tools": "^4.3 || ^3.16",
+        "phpunit/phpunit": "^11 || ^10 || ^9 || ^8 || ^7"
     }
 }

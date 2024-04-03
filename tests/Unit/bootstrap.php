@@ -12,15 +12,27 @@
  *  @copyright  2022 - 2024 Servantes
  *  @license LICENSE.txt
  */
-if (file_exists(__DIR__ . '/../../vendor2/PrestaShop/tests-legacy')) {
-    require_once __DIR__ . '/../../vendor2/PrestaShop/tests-legacy/bootstrap.php';
-} else {
-    require_once __DIR__ . '/../../vendor2/PrestaShop/tests/Unit/bootstrap.php';
+if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+    require_once __DIR__ . '/../../vendor/autoload.php';
 }
 
-require_once __DIR__ . '/../../vendor2/PrestaShop/config/config.inc.php';
-require_once __DIR__ . '/../../vendor2/PrestaShop/config/defines_uri.inc.php';
-require_once __DIR__ . '/../../vendor2/PrestaShop/init.php';
+if (file_exists(dirname(__DIR__, 2) . '/vendor2/PrestaShop')) {
+    // Installed in vendor2 folder next to miguel.php
+    define('MIGUEL_PS_ROOT', dirname(__DIR__, 2) . '/vendor2/PrestaShop');
+} else {
+    // Installed in PrestaShop's modules/ folder
+    define('MIGUEL_PS_ROOT', dirname(__DIR__, 4));
+}
+
+if (file_exists(MIGUEL_PS_ROOT . '/tests-legacy')) {
+    require_once MIGUEL_PS_ROOT . '/tests-legacy/bootstrap.php';
+} else {
+    require_once MIGUEL_PS_ROOT . '/tests/Unit/bootstrap.php';
+}
+
+require_once MIGUEL_PS_ROOT . '/config/config.inc.php';
+require_once MIGUEL_PS_ROOT . '/config/defines_uri.inc.php';
+require_once MIGUEL_PS_ROOT . '/init.php';
 
 require_once __DIR__ . '/../../miguel.php';
 
