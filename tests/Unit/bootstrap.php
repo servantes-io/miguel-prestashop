@@ -36,9 +36,9 @@ require_once MIGUEL_PS_ROOT . '/init.php';
 
 require_once __DIR__ . '/../../miguel.php';
 
-require_once __DIR__ . '/DatabaseTestCase.php';
+require_once __DIR__ . '/Utility/DatabaseTestCase.php';
 
 $module = new Miguel();
 $module->install();
 
-MiguelSettings::reset();
+Miguel\Utils\MiguelSettings::reset();

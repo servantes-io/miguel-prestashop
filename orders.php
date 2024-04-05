@@ -17,15 +17,19 @@
 tato stránka slouží jako API a vrací objednávky za zvolené období
 je nutné se ověřit pomocí tokenu
 */
-header('Content-Type: application/json; charset=UTF-8');
 
 include_once '../../config/config.inc.php';
 include_once 'miguel.php';
+
+use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiResponse;
 
 // required thing for PrestaShop validator (needs to be after config.inc.php)
 if (!defined('_PS_VERSION_')) {
     exit;
 }
+
+header('Content-Type: application/json; charset=UTF-8');
 
 $module = new Miguel();
 $context = Context::getContext();

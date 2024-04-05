@@ -13,6 +13,9 @@
  *  @license LICENSE.txt
  */
 
+namespace Tests\Utility;
+
+use Miguel\Utils\MiguelSettings;
 use PHPUnit\Framework\TestCase;
 
 class DatabaseTestCase extends TestCase
