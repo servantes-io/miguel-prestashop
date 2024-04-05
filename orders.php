@@ -18,8 +18,8 @@ tato stránka slouží jako API a vrací objednávky za zvolené období
 je nutné se ověřit pomocí tokenu
 */
 
-include_once '../../config/config.inc.php';
-include_once 'miguel.php';
+require_once __DIR__ . '/../../config/config.inc.php';
+require_once __DIR__ . '/miguel.php';
 
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
@@ -38,13 +38,12 @@ $context->controller = new FrontController();
 $valid = $module->validateApiAccess();
 if ($valid !== true) {
     echo json_encode($valid, JSON_PRETTY_PRINT);
-    exit;
-}
-
-if (false == Tools::getIsset('updated_since')) {
-    $output = MiguelApiResponse::error(MiguelApiError::argumentNotSet('updated_since'));
 } else {
-    $output = MiguelApiResponse::success($module->getUpdatedOrders(Tools::getValue('updated_since')), 'orders');
-}
+    if (false == Tools::getIsset('updated_since')) {
+        $output = MiguelApiResponse::error(MiguelApiError::argumentNotSet('updated_since'));
+    } else {
+        $output = MiguelApiResponse::success($module->getUpdatedOrders(Tools::getValue('updated_since')), 'orders');
+    }
 
-echo json_encode($output, JSON_PRETTY_PRINT);
+    echo json_encode($output, JSON_PRETTY_PRINT);
+}

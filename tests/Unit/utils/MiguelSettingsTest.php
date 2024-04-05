@@ -16,7 +16,7 @@
 namespace Tests\Unit\utils;
 
 use Miguel\Utils\MiguelSettings;
-use Tests\Utility\DatabaseTestCase;
+use Tests\Unit\Utility\DatabaseTestCase;
 
 require_once __DIR__ . '/../../../src/utils/miguel-settings.php';
 
