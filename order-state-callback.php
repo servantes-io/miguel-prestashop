@@ -17,8 +17,8 @@
 tato stránka slouží jako API, pro automatickou změnu stavů v PS
 */
 
-include_once '../../config/config.inc.php';
-include_once 'miguel.php';
+require_once __DIR__ . '/../../config/config.inc.php';
+require_once __DIR__ . '/miguel.php';
 
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;

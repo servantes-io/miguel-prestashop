@@ -122,7 +122,7 @@ jobs:
       matrix:
         include:
           # PrestaShop v1.7.8.x
-          - php-version: '7.1'
+          - php-version: '7.2'
             prestashop-version: '1.7.8.x'
           - php-version: '7.4'
             prestashop-version: '1.7.8.x'
@@ -162,12 +162,6 @@ jobs:
           timeout_seconds: 10
           max_attempts: 3
           command: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
-
-      - name: Cache Prestashop folder
-        uses: actions/cache@v4
-        with:
-          path: vendor2
-          key: "prestashop (ps:${{ matrix.prestashop-version }};php:${{ matrix.php-version }})"
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
