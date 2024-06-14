@@ -37,8 +37,7 @@ $context->controller = new FrontController();
 $valid = $module->validateApiAccess();
 if ($valid !== true) {
     echo json_encode($valid, JSON_PRETTY_PRINT);
-    exit;
+} else {
+    $output = MiguelApiResponse::success($module->getAllProducts(), 'products');
+    echo json_encode($output, JSON_PRETTY_PRINT);
 }
-
-$output = MiguelApiResponse::success($module->getAllProducts(), 'products');
-echo json_encode($output, JSON_PRETTY_PRINT);
