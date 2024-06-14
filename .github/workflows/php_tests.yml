@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - hotfixes/*
   pull_request:
     types: [opened, reopened, synchronize, edited]
 
@@ -186,3 +187,13 @@ jobs:
 
       - name: Run PHPUnit
         run: phpunit -c ./tests/Unit/phpunit.xml
+
+  test-build:
+    name: Test build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package
+        run: make build-zip

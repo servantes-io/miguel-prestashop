@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
+set -o errexit
+
 tmpdir=$(mktemp -d)
 ignore=".git .github .idea .vscode .gitignore .php-cs-fixer.dist.php .php-cs-fixer.cache composer.* tests run doc vendor vendor2 docker-compose.yml docker-compose.test.yml Makefile *.zip"
-result="$(PWD)/miguel.zip"
+result="$(pwd)/miguel.zip"
 
 rm -rf "$result"
 
