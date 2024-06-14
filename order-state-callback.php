@@ -37,16 +37,15 @@ $context->controller = new FrontController();
 $valid = $module->validateApiAccess();
 if ($valid !== true) {
     echo json_encode($valid, JSON_PRETTY_PRINT);
-    exit;
-}
-
-$json = Tools::file_get_contents('php://input');
-$data = json_decode($json, true);
-
-if (false == array_key_exists('code', $data)) {
-    $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
 } else {
-    $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
-}
+    $json = Tools::file_get_contents('php://input');
+    $data = json_decode($json, true);
 
-echo json_encode($output);
+    if (false == array_key_exists('code', $data)) {
+        $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
+    } else {
+        $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
+    }
+
+    echo json_encode($output);
+}
