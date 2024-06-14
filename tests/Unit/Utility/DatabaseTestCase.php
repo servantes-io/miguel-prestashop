@@ -15,6 +15,7 @@
 
 namespace Tests\Unit\Utility;
 
+use Miguel;
 use Miguel\Utils\MiguelSettings;
 use PHPUnit\Framework\TestCase;
 
@@ -23,6 +24,7 @@ class DatabaseTestCase extends TestCase
     protected function setUp(): void
     {
         MiguelSettings::reset();
+        Miguel::setSharedInstance(null);
 
         parent::setUp();
     }

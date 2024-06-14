@@ -2,6 +2,9 @@ includes:
 	- %currentWorkingDirectory%/vendor/prestashop/php-dev-tools/phpstan/ps-module-extension.neon
 
 parameters:
+	excludePaths:
+		- %currentWorkingDirectory%/vendor
+		- %currentWorkingDirectory%/vendor2
 	paths:
 		# From PHPStan 0.12, paths to check are relative to the neon file
 		- ../../controllers

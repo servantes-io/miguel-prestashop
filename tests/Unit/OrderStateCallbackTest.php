@@ -1,11 +1,10 @@
 <?php
 
 use Miguel\Utils\MiguelSettings;
-use PHPUnit\Framework\TestCase;
-use \phpmock\phpunit\PHPMock;
 use Tests\Unit\Utility\ContextMocker;
+use Tests\Unit\Utility\DatabaseTestCase;
 
-class OrderStateCallbackTest extends TestCase
+class OrderStateCallbackTest extends DatabaseTestCase
 {
     /**
      * @var ContextMocker
@@ -16,6 +15,8 @@ class OrderStateCallbackTest extends TestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->contextMocker = new ContextMocker();
         $this->contextMocker->mockContext();
 
@@ -27,8 +28,6 @@ class OrderStateCallbackTest extends TestCase
 
         // Suppress output to console
         $this->setOutputCallback(function() {});
-
-        parent::setUp();
     }
 
     protected function tearDown(): void
@@ -56,8 +55,8 @@ class OrderStateCallbackTest extends TestCase
             'result' => false,
             'debug' => '',
             'error' => [
-                'code' => 'argument.not_set',
-                'message' => 'Argument updated_since not set',
+                "code" => "payload.invalid",
+                "message" => "Invalid payload: payload is required"
             ],
         ]);
         $this->assertJsonStringEqualsJsonString($output, $expected_output);
@@ -118,11 +117,15 @@ class OrderStateCallbackTest extends TestCase
     {
         if ($input !== null)
         {
-            $input = json_encode($input);
-            $fileGetContentsMock = $this->getFunctionMock(__NAMESPACE__, 'file_get_contents');
-            $fileGetContentsMock->expects($this->once())
-                ->with("php://input")
-                ->willReturn($input);
+            $mockModule = $this->createMock(Miguel::class)
+                // valid token
+                ->method('validateApiAccess')
+                ->willReturn(true)
+                // mock payload
+                ->method('readFileContent')
+                ->willReturn(json_encode($input));
+
+            Miguel::setSharedInstance($mockModule);
         }
 
         include __DIR__ . '/../../order-state-callback.php';

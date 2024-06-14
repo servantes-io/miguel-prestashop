@@ -1,10 +1,10 @@
 <?php
 
 use Miguel\Utils\MiguelSettings;
-use PHPUnit\Framework\TestCase;
 use Tests\Unit\Utility\ContextMocker;
+use Tests\Unit\Utility\DatabaseTestCase;
 
-class OrdersTest extends TestCase
+class OrdersTest extends DatabaseTestCase
 {
     /**
      * @var ContextMocker
@@ -15,6 +15,8 @@ class OrdersTest extends TestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->contextMocker = new ContextMocker();
         $this->contextMocker->mockContext();
 
@@ -26,8 +28,6 @@ class OrdersTest extends TestCase
 
         // Suppress output to console
         $this->setOutputCallback(function() {});
-
-        parent::setUp();
     }
 
     protected function tearDown(): void
