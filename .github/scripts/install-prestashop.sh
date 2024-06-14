@@ -5,7 +5,11 @@ function mysed() {
   local file=$2
 
   if [ -f "$file" ]; then
-    sed -i "$regex" "$file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "$regex" "$file"
+    else
+      sed -i "$regex" "$file"
+    fi
   fi
 }
 
