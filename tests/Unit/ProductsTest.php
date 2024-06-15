@@ -4,7 +4,7 @@ use Miguel\Utils\MiguelSettings;
 use Tests\Unit\Utility\ContextMocker;
 use Tests\Unit\Utility\DatabaseTestCase;
 
-class OrdersTest extends DatabaseTestCase
+class ProductsTest extends DatabaseTestCase
 {
     /**
      * @var ContextMocker
@@ -21,7 +21,6 @@ class OrdersTest extends DatabaseTestCase
         $this->contextMocker->mockContext();
 
         MiguelSettings::reset();
-        unset($_GET['updated_since']);
         unset($_SERVER['Authorization']);
 
         $this->previousErrorReportingSetting = error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
@@ -39,33 +38,9 @@ class OrdersTest extends DatabaseTestCase
         parent::tearDown();
     }
 
-    public function testWithoutArgument()
-    {
-        // PREPARE
-        $_SERVER['Authorization'] = 'Bearer 1234';
-
-        MiguelSettings::setEnabled(true);
-        MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
-
-        // TEST
-        $output = $this->sut();
-
-        // ASSERT
-        $expected_output = json_encode([
-            'result' => false,
-            'debug' => '',
-            'error' => [
-                'code' => 'argument.not_set',
-                'message' => 'Argument updated_since not set',
-            ],
-        ]);
-        $this->assertJsonStringEqualsJsonString($output, $expected_output);
-    }
-
     public function testInvalidToken()
     {
         // PREPARE
-        $_GET['updated_since'] = '2022-01-01';
         $_SERVER['Authorization'] = 'Bearer 1234';
 
         MiguelSettings::setEnabled(true);
@@ -89,7 +64,6 @@ class OrdersTest extends DatabaseTestCase
     public function testActualData()
     {
         // PREPARE
-        $_GET['updated_since'] = '2022-01-01';
         $_SERVER['Authorization'] = 'Bearer 1234';
 
         MiguelSettings::setEnabled(true);
@@ -100,12 +74,12 @@ class OrdersTest extends DatabaseTestCase
 
         // ASSERT
         $json = json_decode($output, true);
-        $this->assertIsArray($json['orders']);
+        $this->assertIsArray($json['products']);
     }
 
     private function sut(): string
     {
-        include __DIR__ . '/../../orders.php';
+        include __DIR__ . '/../../products.php';
         return $this->getActualOutput();
     }
 }

@@ -35,6 +35,11 @@ class Miguel extends Module
         'displayCustomerAccount', // called when the customer account is displayed
     ];
 
+    /**
+     * @var Miguel|null
+     */
+    private static $sharedInstance;
+
     private $_logger;
 
     public function __construct()
@@ -58,6 +63,20 @@ class Miguel extends Module
             $this->_logger = new FileLogger(0); // 0 == debug level, logDebug() won’t work without this.
             $this->_logger->setFilename(_PS_ROOT_DIR_ . '/modules/miguel/debug.log');
         }
+    }
+
+    public static function createInstance()
+    {
+        if (null != self::$sharedInstance) {
+            return self::$sharedInstance;
+        }
+
+        return new Miguel();
+    }
+
+    public static function setSharedInstance($instance)
+    {
+        self::$sharedInstance = $instance;
     }
 
     public function install()
@@ -824,6 +843,18 @@ class Miguel extends Module
         } else {
             return MiguelApiResponse::error(MiguelApiError::unknownError());
         }
+    }
+
+    /**
+     * Alias to Tools::file_get_contents (for easier testing)
+     *
+     * @param string $url
+     *
+     * @return string|false
+     */
+    public function readFileContent($url)
+    {
+        return Tools::file_get_contents($url);
     }
 
     /**

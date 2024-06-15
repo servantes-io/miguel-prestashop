@@ -30,23 +30,23 @@ if (!defined('_PS_VERSION_')) {
 
 header('Content-Type: application/json; charset=UTF-8');
 
-$module = new Miguel();
+$module = Miguel::createInstance();
 $context = Context::getContext();
 $context->controller = new FrontController();
 
 $valid = $module->validateApiAccess();
 if ($valid !== true) {
     echo json_encode($valid, JSON_PRETTY_PRINT);
-    exit;
-}
-
-$json = Tools::file_get_contents('php://input');
-$data = json_decode($json, true);
-
-if (false == array_key_exists('code', $data)) {
-    $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
 } else {
-    $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
-}
+    $json = $module->readFileContent('php://input');
+    $data = json_decode($json, true);
+    if (null === $data) {
+        $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
+    } elseif (false == array_key_exists('code', $data)) {
+        $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
+    } else {
+        $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
+    }
 
-echo json_encode($output);
+    echo json_encode($output);
+}

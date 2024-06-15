@@ -39,7 +39,7 @@ require_once __DIR__ . '/../../miguel.php';
 require_once __DIR__ . '/Utility/DatabaseTestCase.php';
 require_once __DIR__ . '/Utility/ContextMocker.php';
 
-$module = new Miguel();
+$module = Miguel::createInstance();
 $module->install();
 
 Miguel\Utils\MiguelSettings::reset();

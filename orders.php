@@ -31,7 +31,7 @@ if (!defined('_PS_VERSION_')) {
 
 header('Content-Type: application/json; charset=UTF-8');
 
-$module = new Miguel();
+$module = Miguel::createInstance();
 $context = Context::getContext();
 $context->controller = new FrontController();
 

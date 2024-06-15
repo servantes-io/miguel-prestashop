@@ -4,7 +4,7 @@ use Miguel\Utils\MiguelSettings;
 use Tests\Unit\Utility\ContextMocker;
 use Tests\Unit\Utility\DatabaseTestCase;
 
-class OrdersTest extends DatabaseTestCase
+class OrderStateCallbackTest extends DatabaseTestCase
 {
     /**
      * @var ContextMocker
@@ -39,7 +39,7 @@ class OrdersTest extends DatabaseTestCase
         parent::tearDown();
     }
 
-    public function testWithoutArgument()
+    public function testWithoutPayload()
     {
         // PREPARE
         $_SERVER['Authorization'] = 'Bearer 1234';
@@ -55,8 +55,8 @@ class OrdersTest extends DatabaseTestCase
             'result' => false,
             'debug' => '',
             'error' => [
-                'code' => 'argument.not_set',
-                'message' => 'Argument updated_since not set',
+                "code" => "payload.invalid",
+                "message" => "Invalid payload: payload is required"
             ],
         ]);
         $this->assertJsonStringEqualsJsonString($output, $expected_output);
@@ -65,7 +65,6 @@ class OrdersTest extends DatabaseTestCase
     public function testInvalidToken()
     {
         // PREPARE
-        $_GET['updated_since'] = '2022-01-01';
         $_SERVER['Authorization'] = 'Bearer 1234';
 
         MiguelSettings::setEnabled(true);
@@ -89,23 +88,47 @@ class OrdersTest extends DatabaseTestCase
     public function testActualData()
     {
         // PREPARE
-        $_GET['updated_since'] = '2022-01-01';
         $_SERVER['Authorization'] = 'Bearer 1234';
 
         MiguelSettings::setEnabled(true);
         MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
 
         // TEST
-        $output = $this->sut();
+        $output = $this->sut([
+            "code" => "1234",
+            "miguel_state" => 'finished',
+            "products" => [
+                [
+                    "formats" => [
+                        [
+                            "format" => "epub",
+                        ],
+                    ],
+                ],
+            ],
+        ]);
 
         // ASSERT
         $json = json_decode($output, true);
         $this->assertIsArray($json['orders']);
     }
 
-    private function sut(): string
+    private function sut($input = null): string
     {
-        include __DIR__ . '/../../orders.php';
+        if ($input !== null)
+        {
+            $mockModule = $this->createMock(Miguel::class)
+                // valid token
+                ->method('validateApiAccess')
+                ->willReturn(true)
+                // mock payload
+                ->method('readFileContent')
+                ->willReturn(json_encode($input));
+
+            Miguel::setSharedInstance($mockModule);
+        }
+
+        include __DIR__ . '/../../order-state-callback.php';
         return $this->getActualOutput();
     }
 }
