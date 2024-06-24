@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.0.3
+
+Fixes:
+- Communication with our backend server
+
+
 ## v1.0.2
 
 Fixes:
