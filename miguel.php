@@ -439,7 +439,7 @@ class Miguel extends Module
         $body_orders = [];
         $body_orders['code'] = $order->reference;
         $body_orders['user'] = [
-            'id' => (string)$order->id_customer,
+            'id' => (string) $order->id_customer,
             'full_name' => $customer->firstname . ' ' . $customer->lastname,
             'email' => $customer->email,
             'address' => $address_str,
