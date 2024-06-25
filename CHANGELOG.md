@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.0.4
+
+Fixes:
+- Communication with our backend server: better handling of empty product references in orders
+
+
 ## v1.0.3
 
 Fixes:
