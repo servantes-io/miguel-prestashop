@@ -1,26 +1,21 @@
 <?php
 
+namespace Tests\Unit;
+
+use Miguel;
 use Miguel\Utils\MiguelSettings;
-use Tests\Unit\Utility\ContextMocker;
+use Order;
+use Product;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class OrdersTest extends DatabaseTestCase
 {
-    /**
-     * @var ContextMocker
-     */
-    protected $contextMocker;
-
     private $previousErrorReportingSetting;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->contextMocker = new ContextMocker();
-        $this->contextMocker->mockContext();
-
-        MiguelSettings::reset();
         unset($_GET['updated_since']);
         unset($_SERVER['Authorization']);
 
@@ -32,8 +27,6 @@ class OrdersTest extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        $this->contextMocker->resetContext();
-
         error_reporting($this->previousErrorReportingSetting);
 
         parent::tearDown();
@@ -114,47 +107,16 @@ class OrdersTest extends DatabaseTestCase
 
         $existing_orders = Order::getOrdersWithInformations();
 
-        $order = new Order();
-        $order->id_customer = 1;
-        $order->id_address_delivery = 1;
-        $order->id_address_invoice = 1;
-        $order->id_cart = 1;
-        $order->id_currency = 1;
-        $order->id_lang = 1;
-        $order->id_carrier = 1;
-        $order->current_state = 1;
-        $order->module = 'miguel';
-        $order->payment = 'miguel';
-        $order->total_paid = 1;
-        $order->total_paid_real = 1;
-        $order->total_products = 1;
-        $order->total_products_wt = 1;
-        $order->total_shipping = 1;
-        $order->total_shipping_tax_incl = 1;
-        $order->total_shipping_tax_excl = 1;
+        $order = $this->entityCreator->createOrder();
         $order->reference = '1234';
-        $order->conversion_rate = 1;
         $order->save();
 
         $product = new Product();
+        $product->name = 'Test product';
         $product->reference = '';
         $product->save();
 
-        $orderDetail = new OrderDetail();
-        $orderDetail->id_order = $order->id;
-        $orderDetail->product_id = $product->id;
-        $orderDetail->product_name = "Product 1";
-        $orderDetail->product_quantity = 1;
-        $orderDetail->product_quantity_in_stock = 1;
-        $orderDetail->product_price = 1;
-        $orderDetail->product_reference = $product->reference;
-        $orderDetail->unit_price_tax_incl = 1;
-        $orderDetail->unit_price_tax_excl = 1;
-        $orderDetail->total_price_tax_incl = 1;
-        $orderDetail->total_price_tax_excl = 1;
-        $orderDetail->id_warehouse = 1;
-        $orderDetail->id_shop = 1;
-        $orderDetail->id_shop_list = 1;
+        $orderDetail = $this->entityCreator->createOrderDetail($order, $product);
         $orderDetail->save();
 
         // TEST
