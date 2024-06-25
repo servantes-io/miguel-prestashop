@@ -370,6 +370,11 @@ class Miguel extends Module
         $this->context->controller->addCSS($this->_path . '/views/css/front.css');
     }
 
+    /**
+     * @param array<string,mixed> $params
+     *
+     * @return array<string,mixed>|false
+     */
     public function createOrderDetailArray($params)
     {
         if (false == isset($params['id_order'])) {
@@ -377,7 +382,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Params not set');
             }
 
-            return;
+            return false;
         }
         $order = new Order((int) $params['id_order']);
         if (false == Validate::isLoadedObject($order)) {
@@ -385,7 +390,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Order: ' . $params['id_order']);
             }
 
-            return;
+            return false;
         }
         $customer = new Customer($order->id_customer);
         if (false == Validate::isLoadedObject($customer)) {
@@ -393,7 +398,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Customer: ' . $order->id_customer . ', id_order: ' . $params['id_order']);
             }
 
-            return;
+            return false;
         }
         $currency = new Currency($order->id_currency);
         if (false == Validate::isLoadedObject($currency)) {
@@ -401,7 +406,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Currency: ' . $order->id_currency . ', id_order: ' . $params['id_order']);
             }
 
-            return;
+            return false;
         }
         $address_invoice = new Address($order->id_address_invoice);
         if (false == Validate::isLoadedObject($address_invoice)) {
@@ -409,7 +414,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Address: ' . $order->id_address_invoice . ', id_order: ' . $params['id_order']);
             }
 
-            return;
+            return false;
         }
         $language = new Language($customer->id_lang);
         if (false == Validate::isLoadedObject($language)) {
@@ -417,7 +422,7 @@ class Miguel extends Module
                 $this->_logger->logDebug('hookActionOrderStatusUpdate: Cannot create new Language: ' . $customer->id_lang . ', id_order: ' . $params['id_order']);
             }
 
-            return;
+            return false;
         }
         $order_detail = OrderDetail::getList($params['id_order']);
 
@@ -451,6 +456,11 @@ class Miguel extends Module
         $body_orders['products'] = [];
 
         foreach ($order_detail as $key => $product) {
+            if (null == $product['product_reference'] || '' == $product['product_reference']) {
+                // ignore products without reference
+                continue;
+            }
+
             $body_orders['products'][] = [
                 'code' => $product['product_reference'],
                 'price' => [
@@ -458,6 +468,11 @@ class Miguel extends Module
                     'sold_without_vat' => $product['unit_price_tax_excl'],
                 ],
             ];
+        }
+
+        if (count($body_orders['products']) < 1) {
+            // there are no products in the order (or products with reference)
+            return false;
         }
 
         return $body_orders;
@@ -470,6 +485,11 @@ class Miguel extends Module
         } // ověření, že je api povoleno
 
         $body_orders = $this->createOrderDetailArray($params);
+        if (false == $body_orders) {
+            // ignore when the order is not found or there are no products
+            return;
+        }
+
         $res = $this->curlPost('/v1/orders', $body_orders);
     }
 
@@ -645,6 +665,7 @@ class Miguel extends Module
 
             $order_data = $this->createOrderDetailArray($params);
             if ($order_data) {
+                // add only real orders (not false values)
                 $updated_orders[] = $order_data;
             }
         }
