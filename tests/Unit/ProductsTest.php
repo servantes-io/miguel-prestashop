@@ -1,26 +1,18 @@
 <?php
 
+namespace Tests\Unit;
+
 use Miguel\Utils\MiguelSettings;
-use Tests\Unit\Utility\ContextMocker;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class ProductsTest extends DatabaseTestCase
 {
-    /**
-     * @var ContextMocker
-     */
-    protected $contextMocker;
-
     private $previousErrorReportingSetting;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->contextMocker = new ContextMocker();
-        $this->contextMocker->mockContext();
-
-        MiguelSettings::reset();
         unset($_SERVER['Authorization']);
 
         $this->previousErrorReportingSetting = error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
@@ -31,8 +23,6 @@ class ProductsTest extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        $this->contextMocker->resetContext();
-
         error_reporting($this->previousErrorReportingSetting);
 
         parent::tearDown();

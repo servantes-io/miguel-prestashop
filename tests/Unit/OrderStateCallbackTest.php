@@ -1,26 +1,19 @@
 <?php
 
+namespace Tests\Unit;
+
+use Miguel;
 use Miguel\Utils\MiguelSettings;
-use Tests\Unit\Utility\ContextMocker;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class OrderStateCallbackTest extends DatabaseTestCase
 {
-    /**
-     * @var ContextMocker
-     */
-    protected $contextMocker;
-
     private $previousErrorReportingSetting;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->contextMocker = new ContextMocker();
-        $this->contextMocker->mockContext();
-
-        MiguelSettings::reset();
         unset($_GET['updated_since']);
         unset($_SERVER['Authorization']);
 
@@ -32,8 +25,6 @@ class OrderStateCallbackTest extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        $this->contextMocker->resetContext();
-
         error_reporting($this->previousErrorReportingSetting);
 
         parent::tearDown();

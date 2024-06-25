@@ -1,26 +1,21 @@
 <?php
 
+namespace Tests\Unit;
+
+use Miguel;
 use Miguel\Utils\MiguelSettings;
-use Tests\Unit\Utility\ContextMocker;
+use Order;
+use Product;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class OrdersTest extends DatabaseTestCase
 {
-    /**
-     * @var ContextMocker
-     */
-    protected $contextMocker;
-
     private $previousErrorReportingSetting;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->contextMocker = new ContextMocker();
-        $this->contextMocker->mockContext();
-
-        MiguelSettings::reset();
         unset($_GET['updated_since']);
         unset($_SERVER['Authorization']);
 
@@ -32,8 +27,6 @@ class OrdersTest extends DatabaseTestCase
 
     protected function tearDown(): void
     {
-        $this->contextMocker->resetContext();
-
         error_reporting($this->previousErrorReportingSetting);
 
         parent::tearDown();
@@ -101,6 +94,38 @@ class OrdersTest extends DatabaseTestCase
         // ASSERT
         $json = json_decode($output, true);
         $this->assertIsArray($json['orders']);
+    }
+
+    public function testEmptyReferenceInProduct()
+    {
+        // PREPARE
+        $_GET['updated_since'] = '2022-01-01';
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        MiguelSettings::setEnabled(true);
+        MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
+
+        $existing_orders = Order::getOrdersWithInformations();
+
+        $order = $this->entityCreator->createOrder();
+        $order->reference = '1234';
+        $order->save();
+
+        $product = new Product();
+        $product->name = 'Test product';
+        $product->reference = '';
+        $product->save();
+
+        $orderDetail = $this->entityCreator->createOrderDetail($order, $product);
+        $orderDetail->save();
+
+        // TEST
+        $output = $this->sut();
+
+        // ASSERT
+        $json = json_decode($output, true);
+        $this->assertIsArray($json['orders']);
+        $this->assertCount(count($existing_orders), $json['orders']); // no new order should be returned
     }
 
     private function sut(): string
