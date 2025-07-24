@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.0.5
+
+Fixes:
+- Communication from our backend to Prestshop module: when trying to fetch missed orders
+
+
 ## v1.0.4
 
 Fixes:
