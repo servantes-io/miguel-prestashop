@@ -1,5 +1,8 @@
 # Apache 2.2
 <IfModule !mod_authz_core.c>
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
     <Files *.php>
         order allow,deny
         deny from all
@@ -28,6 +31,9 @@
 
 # Apache 2.4
 <IfModule mod_authz_core.c>
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
     <Files *.php>
         Require all denied
     </Files>

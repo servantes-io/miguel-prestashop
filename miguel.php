@@ -759,7 +759,7 @@ class Miguel extends Module
         $headers = $this->getAuthorizationHeader();
         // HEADER: Get the access token from the header
         if (!empty($headers)) {
-            if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
+            if (preg_match('/Bearer\s(\S+)/i', $headers, $matches)) {
                 return $matches[1];
             }
         }
