@@ -30,10 +30,16 @@ class MiguelApiError implements \JsonSerializable
      */
     private $message;
 
-    public function __construct(string $code, string $message)
+    /**
+     * @var mixed
+     */
+    private $data;
+
+    public function __construct(string $code, string $message, $data = null)
     {
         $this->code = $code;
         $this->message = $message;
+        $this->data = $data;
     }
 
     // JsonSerializable
@@ -44,6 +50,7 @@ class MiguelApiError implements \JsonSerializable
         return [
             'code' => $this->code,
             'message' => $this->message,
+            'data' => $this->data,
         ];
     }
 
@@ -57,11 +64,20 @@ class MiguelApiError implements \JsonSerializable
         return $this->message;
     }
 
+    public function getData()
+    {
+        return $this->data;
+    }
+
     // Make functions
 
-    public static function apiKeyNotSet(): MiguelApiError
+    /**
+     * @param mixed $data
+     * @return MiguelApiError
+     */
+    public static function apiKeyNotSet($data = null): MiguelApiError
     {
-        return new self('api_key.not_set', 'API key not set');
+        return new self('api_key.not_set', 'API key not set', $data);
     }
 
     public static function apiKeyInvalid(): MiguelApiError

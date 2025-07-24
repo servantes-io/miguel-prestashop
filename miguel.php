@@ -15,6 +15,7 @@
 require_once 'src/utils/miguel-settings.php';
 require_once 'src/utils/miguel-api-response.php';
 require_once 'src/utils/miguel-api-error.php';
+require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
@@ -850,7 +851,7 @@ class Miguel extends Module
         $token = $this->getBearerToken();
 
         if (false == $token) {
-            return MiguelApiResponse::error(MiguelApiError::apiKeyNotSet());
+            return MiguelApiResponse::error(MiguelApiError::apiKeyNotSet(array('headers' => getallheaders())));
         } elseif (false == $configuration) {
             return MiguelApiResponse::error(MiguelApiError::configurationNotSet());
         } elseif (0 == $configuration['api_enable']) {
