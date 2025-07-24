@@ -48,11 +48,16 @@ class MiguelApiError implements \JsonSerializable
     #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
-        return [
+        $res = [
             'code' => $this->code,
             'message' => $this->message,
-            'data' => $this->data,
         ];
+
+        if ($this->data) {
+            $res['data'] = $this->data;
+        }
+
+        return $res;
     }
 
     public function getCode(): string
