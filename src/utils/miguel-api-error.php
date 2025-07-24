@@ -79,6 +79,7 @@ class MiguelApiError implements \JsonSerializable
 
     /**
      * @param mixed $data
+     *
      * @return MiguelApiError
      */
     public static function apiKeyNotSet($data = null): MiguelApiError

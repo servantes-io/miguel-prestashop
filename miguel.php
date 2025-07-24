@@ -852,7 +852,7 @@ class Miguel extends Module
         $token = $this->getBearerToken();
 
         if (false == $token) {
-            return MiguelApiResponse::error(MiguelApiError::apiKeyNotSet(array('headers' => getallheaders())));
+            return MiguelApiResponse::error(MiguelApiError::apiKeyNotSet(['headers' => getallheaders()]));
         } elseif (false == $configuration) {
             return MiguelApiResponse::error(MiguelApiError::configurationNotSet());
         } elseif (0 == $configuration['api_enable']) {
