@@ -4,6 +4,7 @@
 
 Fixes:
 - Communication from our backend to Prestshop module: when trying to fetch missed orders
+- Support for bundles (pack of products)
 
 
 ## v1.0.4

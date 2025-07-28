@@ -10,7 +10,7 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  *  @author Pavel Vejnar <vejnar.p@gmail.com>
- *  @copyright  2022 - 2023 Servantes
+ *  @copyright  2022 - 2025 Servantes
  *  @license LICENSE.txt
  */
 require_once 'src/utils/miguel-settings.php';
@@ -458,18 +458,92 @@ class Miguel extends Module
         $body_orders['products'] = [];
 
         foreach ($order_detail as $key => $product) {
-            if (null == $product['product_reference'] || '' == $product['product_reference']) {
-                // ignore products without reference
-                continue;
-            }
+            // Check if the product is a pack
+            if (Pack::isPack($product['product_id'])) {
+                if (defined('_LOGGER_')) {
+                    $this->_logger->logDebug('Processing pack product: ID=' . $product['product_id'] . ', Reference=' . $product['product_reference']);
+                }
 
-            $body_orders['products'][] = [
-                'code' => $product['product_reference'],
-                'price' => [
-                    'regular_without_vat' => $product['original_product_price'],
-                    'sold_without_vat' => $product['unit_price_tax_excl'],
-                ],
-            ];
+                // Get pack items and add them individually
+                $pack_items = Pack::getItems($product['product_id'], (int) Context::getContext()->language->id);
+
+                if (empty($pack_items)) {
+                    if (defined('_LOGGER_')) {
+                        $this->_logger->logDebug('No pack items found for pack ID: ' . $product['product_id']);
+                    }
+
+                    if (null == $product['product_reference'] || '' == $product['product_reference']) {
+                        // ignore products without reference
+                        continue;
+                    }
+
+                    // If no pack items found, treat as regular product
+                    $body_orders['products'][] = [
+                        'code' => $product['product_reference'],
+                        'price' => [
+                            'regular_without_vat' => $product['original_product_price'],
+                            'sold_without_vat' => $product['unit_price_tax_excl'],
+                        ],
+                    ];
+                    continue;
+                }
+
+                foreach ($pack_items as $pack_item) {
+                    // Get the product object for the pack item
+                    $pack_product = new Product($pack_item->id, false, (int) Context::getContext()->language->id);
+
+                    if (null == $pack_product['product_reference'] || '' == $pack_product['product_reference']) {
+                        // ignore products without reference
+                        continue;
+                    }
+
+                    if (Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
+                        // Calculate proportional pricing based on pack item quantity and total pack price
+                        $item_quantity = (int) $pack_item->quantity;
+                        $total_pack_quantity = (int) $product['product_quantity'];
+
+                        // Avoid division by zero
+                        if ($total_pack_quantity > 0) {
+                            // Calculate unit price for this pack item
+                            $pack_item_unit_price = ($product['unit_price_tax_excl'] * $item_quantity) / $total_pack_quantity;
+                            $pack_item_original_price = ($product['original_product_price'] * $item_quantity) / $total_pack_quantity;
+                        } else {
+                            $pack_item_unit_price = $product['unit_price_tax_excl'];
+                            $pack_item_original_price = $product['original_product_price'];
+                        }
+
+                        $body_orders['products'][] = [
+                            'code' => $pack_product->reference,
+                            'price' => [
+                                'regular_without_vat' => $pack_item_original_price,
+                                'sold_without_vat' => $pack_item_unit_price,
+                            ],
+                        ];
+
+                        if (defined('_LOGGER_')) {
+                            $this->_logger->logDebug('Added pack item: Reference=' . $pack_product->reference . ', Quantity=' . $item_quantity);
+                        }
+                    } else {
+                        if (defined('_LOGGER_')) {
+                            $this->_logger->logDebug('Invalid pack item or missing reference: ID=' . $pack_item->id);
+                        }
+                    }
+                }
+            } else {
+                if (null == $product['product_reference'] || '' == $product['product_reference']) {
+                    // ignore products without reference
+                    continue;
+                }
+
+                // Regular product (not a pack)
+                $body_orders['products'][] = [
+                    'code' => $product['product_reference'],
+                    'price' => [
+                        'regular_without_vat' => $product['original_product_price'],
+                        'sold_without_vat' => $product['unit_price_tax_excl'],
+                    ],
+                ];
+            }
         }
 
         if (count($body_orders['products']) < 1) {
