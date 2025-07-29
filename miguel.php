@@ -51,7 +51,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.0.5';
+        $this->version = '1.1.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
