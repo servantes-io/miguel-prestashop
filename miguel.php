@@ -15,9 +15,11 @@
  */
 require_once 'src/utils/miguel-settings.php';
 require_once 'src/utils/miguel-api-response.php';
+require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-error.php';
 require_once 'src/utils/polyfill-getallheaders.php';
 
+use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
@@ -489,13 +491,11 @@ class Miguel extends Module
                     }
 
                     // If no pack items found, treat as regular product
-                    $body_orders['products'][] = [
-                        'code' => $product['product_reference'],
-                        'price' => [
-                            'regular_without_vat' => $product['original_product_price'],
-                            'sold_without_vat' => $product['unit_price_tax_excl'],
-                        ],
-                    ];
+                    $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
+                        $product['product_reference'],
+                        $product['original_product_price'],
+                        $product['unit_price_tax_excl']
+                    );
                     continue;
                 }
 
@@ -553,13 +553,11 @@ class Miguel extends Module
                         $pack_item_unit_price = $product['unit_price_tax_excl'] * $proportion;
                         $pack_item_original_price = $product['original_product_price'] * $regular_proportion;
 
-                        $body_orders['products'][] = [
-                            'code' => $item_data['product']->reference,
-                            'price' => [
-                                'regular_without_vat' => $pack_item_original_price,
-                                'sold_without_vat' => $pack_item_unit_price,
-                            ],
-                        ];
+                        $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
+                            $item_data['product']->reference,
+                            $pack_item_original_price,
+                            $pack_item_unit_price
+                        );
 
                         if (defined('_LOGGER_')) {
                             $this->_logger->logDebug('Added pack item: ' . $item_data['product']->reference . ', Proportion: ' . round($proportion * 100, 2) . '%, Final price: ' . $pack_item_unit_price);
@@ -577,13 +575,11 @@ class Miguel extends Module
                 }
 
                 // Regular product (not a pack)
-                $body_orders['products'][] = [
-                    'code' => $product['product_reference'],
-                    'price' => [
-                        'regular_without_vat' => $product['original_product_price'],
-                        'sold_without_vat' => $product['unit_price_tax_excl'],
-                    ],
-                ];
+                $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
+                    $product['product_reference'],
+                    $product['original_product_price'],
+                    $product['unit_price_tax_excl']
+                );
             }
         }
 
