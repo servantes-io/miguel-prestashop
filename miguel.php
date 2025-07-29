@@ -23,7 +23,7 @@ use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
-define('_LOGGER_', 1);
+// define('_LOGGER_', 1);
 
 if (!defined('_PS_VERSION_')) {
     exit;
