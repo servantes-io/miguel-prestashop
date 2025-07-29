@@ -1,9 +1,18 @@
 <?php
+$finder = (PhpCsFixer\Finder::create())
+    ->in(__DIR__)
+    ->exclude([
+        'vendor',
+        'vendor2',
+        'run',
+        'tests',
+    ]);
 
 $config = new PrestaShop\CodingStandards\CsFixer\Config();
-
-/** @var \Symfony\Component\Finder\Finder $finder */
-$finder = $config->setUsingCache(true)->getFinder();
-$finder->in(__DIR__)->exclude(['vendor', 'vendor2', 'run', 'tests']);
-
-return $config;
+return $config
+    ->setUsingCache(true)
+    ->setFinder($finder)
+    ->setRules(array_merge($config->getRules(), [
+        'blank_line_after_opening_tag' => false,
+    ]))
+;

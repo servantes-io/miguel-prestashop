@@ -13,6 +13,10 @@
  *  @copyright  2022 - 2024 Servantes
  *  @license LICENSE.txt
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 if (!function_exists('getallheaders')) {
     /**
      * Get all HTTP header key/values as an associative array for the current request.
