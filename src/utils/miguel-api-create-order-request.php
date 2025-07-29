@@ -16,12 +16,6 @@
 
 namespace Miguel\Utils;
 
-use Address;
-use Context;
-use Pack;
-use Product;
-use Validate;
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -31,11 +25,12 @@ class MiguelApiCreateOrderRequest
     /**
      * Compose address string from address object
      *
-     * @param Address $address_invoice Address object
+     * @param \Address $address_invoice Address object
      *
      * @return string Address string
      */
-    public static function composeAddress(Address $address_invoice) {
+    public static function composeAddress(\Address $address_invoice)
+    {
         $address_str = '';
         $address_str .= ((strlen($address_invoice->company) > 0) ? ($address_invoice->company . ', ') : (''));
         $address_str .= ((strlen($address_invoice->firstname) > 0 && strlen($address_invoice->lastname) > 0) ? ($address_invoice->firstname . ' ' . $address_invoice->lastname . ', ') : (''));
@@ -56,16 +51,17 @@ class MiguelApiCreateOrderRequest
      *
      * @return array Array of products in JSON format
      */
-    public static function createProductsArray(array $order_detail) {
+    public static function createProductsArray(array $order_detail)
+    {
         $items = [];
 
         foreach ($order_detail as $key => $product) {
             // Check if the product is a pack
             $product_id = (int) $product['product_id'];
 
-            if (Pack::isPack($product_id)) {
+            if (\Pack::isPack($product_id)) {
                 // Get pack items and add them individually
-                $pack_items = Pack::getItems($product_id, (int) Context::getContext()->language->id);
+                $pack_items = \Pack::getItems($product_id, (int) \Context::getContext()->language->id);
 
                 if (empty($pack_items)) {
                     $product_array = self::createArrayFromSimpleProduct($product);
@@ -82,9 +78,9 @@ class MiguelApiCreateOrderRequest
                 $valid_pack_items = [];
 
                 foreach ($pack_items as $pack_item) {
-                    $pack_product = new Product($pack_item->id, false, (int) Context::getContext()->language->id);
+                    $pack_product = new \Product($pack_item->id, false, (int) \Context::getContext()->language->id);
 
-                    if (Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
+                    if (\Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
                         $individual_price = (float) $pack_product->getPrice(false);
                         $individual_regular_price = (float) $pack_product->getPrice(false, null, 6, null, false, false);
                         $item_quantity = (int) $pack_item->pack_quantity;
@@ -147,7 +143,8 @@ class MiguelApiCreateOrderRequest
      *
      * @return MiguelApiCreateOrderItem|false
      */
-    private static function createArrayFromSimpleProduct(array $product) {
+    private static function createArrayFromSimpleProduct(array $product)
+    {
         if (null == $product['product_reference'] || '' == $product['product_reference']) {
             // ignore products without reference
             return false;
@@ -168,7 +165,8 @@ class MiguelApiCreateOrderRequest
      *
      * @return array Array of MiguelApiCreateOrderItem with duplicates removed
      */
-    private static function removeDuplicateProducts(array $products) {
+    private static function removeDuplicateProducts(array $products)
+    {
         $unique_products_by_code = [];
 
         foreach ($products as $product) {
