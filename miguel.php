@@ -23,7 +23,7 @@ use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
-// define('_LOGGER_', 1);
+define('_LOGGER_', 1);
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -428,6 +428,11 @@ class Miguel extends Module
         }
         $order_detail = OrderDetail::getList($params['id_order']);
 
+        if (defined('_LOGGER_')) {
+            $this->_logger->logDebug('Order reference: ' . $order->reference);
+            $this->_logger->logDebug('Order detail: ' . json_encode($order_detail));
+        }
+
         $address_str = '';
         $address_str .= ((strlen($address_invoice->company) > 0) ? ($address_invoice->company . ', ') : (''));
         $address_str .= ((strlen($address_invoice->firstname) > 0 && strlen($address_invoice->lastname) > 0) ? ($address_invoice->firstname . ' ' . $address_invoice->lastname . ', ') : (''));
@@ -459,17 +464,23 @@ class Miguel extends Module
 
         foreach ($order_detail as $key => $product) {
             // Check if the product is a pack
-            if (Pack::isPack($product['product_id'])) {
+            $product_id = (int) $product['product_id'];
+
+            if (Pack::isPack($product_id)) {
                 if (defined('_LOGGER_')) {
-                    $this->_logger->logDebug('Processing pack product: ID=' . $product['product_id'] . ', Reference=' . $product['product_reference']);
+                    $this->_logger->logDebug('Processing pack product: ID=' . $product_id . ', Reference=' . $product['product_reference']);
                 }
 
-                // Get pack items and add them individually
-                $pack_items = Pack::getItems($product['product_id'], (int) Context::getContext()->language->id);
+                                // Get pack items and add them individually
+                $pack_items = Pack::getItems($product_id, (int) Context::getContext()->language->id);
+
+                if (defined('_LOGGER_')) {
+                    $this->_logger->logDebug('Pack items found: ' . count($pack_items) . ' for product ID: ' . $product_id);
+                }
 
                 if (empty($pack_items)) {
                     if (defined('_LOGGER_')) {
-                        $this->_logger->logDebug('No pack items found for pack ID: ' . $product['product_id']);
+                        $this->_logger->logDebug('No pack items found, treating as regular product');
                     }
 
                     if (null == $product['product_reference'] || '' == $product['product_reference']) {
@@ -488,32 +499,62 @@ class Miguel extends Module
                     continue;
                 }
 
+                // First, calculate total individual values for proportional distribution
+                $total_individual_value = 0;
+                $total_individual_regular_value = 0;
+                $valid_pack_items = [];
+
                 foreach ($pack_items as $pack_item) {
-                    // Get the product object for the pack item
                     $pack_product = new Product($pack_item->id, false, (int) Context::getContext()->language->id);
 
-                    if (null == $pack_product['product_reference'] || '' == $pack_product['product_reference']) {
-                        // ignore products without reference
-                        continue;
+                    if (defined('_LOGGER_')) {
+                        $this->_logger->logDebug('Processing pack item ID: ' . $pack_item->id . ', Quantity: ' . $pack_item->pack_quantity);
                     }
 
                     if (Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
-                        // Calculate proportional pricing based on pack item quantity and total pack price
-                        $item_quantity = (int) $pack_item->quantity;
-                        $total_pack_quantity = (int) $product['product_quantity'];
+                        $individual_price = (float) $pack_product->getPrice(false);
+                        $individual_regular_price = (float) $pack_product->getPrice(false, null, 6, null, false, false);
+                        $item_quantity = (int) $pack_item->pack_quantity;
 
-                        // Avoid division by zero
-                        if ($total_pack_quantity > 0) {
-                            // Calculate unit price for this pack item
-                            $pack_item_unit_price = ($product['unit_price_tax_excl'] * $item_quantity) / $total_pack_quantity;
-                            $pack_item_original_price = ($product['original_product_price'] * $item_quantity) / $total_pack_quantity;
-                        } else {
-                            $pack_item_unit_price = $product['unit_price_tax_excl'];
-                            $pack_item_original_price = $product['original_product_price'];
+                        $item_total_value = $individual_price * $item_quantity;
+                        $item_regular_total_value = $individual_regular_price * $item_quantity;
+
+                        $total_individual_value += $item_total_value;
+                        $total_individual_regular_value += $item_regular_total_value;
+
+                        $valid_pack_items[] = [
+                            'product' => $pack_product,
+                            'quantity' => $item_quantity,
+                            'individual_total' => $item_total_value,
+                            'individual_regular_total' => $item_regular_total_value,
+                        ];
+
+                        if (defined('_LOGGER_')) {
+                            $this->_logger->logDebug('Valid pack item: ' . $pack_product->reference . ', Individual price: ' . $individual_price . ', Total value: ' . $item_total_value);
                         }
+                    } else {
+                        if (defined('_LOGGER_')) {
+                            $this->_logger->logDebug('Invalid pack item: ID=' . $pack_item->id . ', Loaded=' . (Validate::isLoadedObject($pack_product) ? 'yes' : 'no') . ', Reference=' . (isset($pack_product->reference) ? $pack_product->reference : 'empty'));
+                        }
+                    }
+                }
+
+                if (defined('_LOGGER_')) {
+                    $this->_logger->logDebug('Total individual value: ' . $total_individual_value . ', Pack price: ' . $product['unit_price_tax_excl'] . ', Valid items: ' . count($valid_pack_items));
+                }
+
+                // Now distribute pack price proportionally among valid items
+                if ($total_individual_value > 0 && count($valid_pack_items) > 0) {
+                    foreach ($valid_pack_items as $item_data) {
+                        $proportion = $item_data['individual_total'] / $total_individual_value;
+                        $regular_proportion = $total_individual_regular_value > 0 ?
+                            $item_data['individual_regular_total'] / $total_individual_regular_value : $proportion;
+
+                        $pack_item_unit_price = $product['unit_price_tax_excl'] * $proportion;
+                        $pack_item_original_price = $product['original_product_price'] * $regular_proportion;
 
                         $body_orders['products'][] = [
-                            'code' => $pack_product->reference,
+                            'code' => $item_data['product']->reference,
                             'price' => [
                                 'regular_without_vat' => $pack_item_original_price,
                                 'sold_without_vat' => $pack_item_unit_price,
@@ -521,12 +562,12 @@ class Miguel extends Module
                         ];
 
                         if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Added pack item: Reference=' . $pack_product->reference . ', Quantity=' . $item_quantity);
+                            $this->_logger->logDebug('Added pack item: ' . $item_data['product']->reference . ', Proportion: ' . round($proportion * 100, 2) . '%, Final price: ' . $pack_item_unit_price);
                         }
-                    } else {
-                        if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Invalid pack item or missing reference: ID=' . $pack_item->id);
-                        }
+                    }
+                } else {
+                    if (defined('_LOGGER_')) {
+                        $this->_logger->logDebug('Cannot distribute pack price - no valid items or zero total value');
                     }
                 }
             } else {
@@ -544,6 +585,10 @@ class Miguel extends Module
                     ],
                 ];
             }
+        }
+
+        if (defined('_LOGGER_')) {
+            $this->_logger->logDebug('Order result: ' . json_encode($body_orders));
         }
 
         if (count($body_orders['products']) < 1) {
