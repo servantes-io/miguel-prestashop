@@ -471,7 +471,7 @@ class Miguel extends Module
                     $this->_logger->logDebug('Processing pack product: ID=' . $product_id . ', Reference=' . $product['product_reference']);
                 }
 
-                                // Get pack items and add them individually
+                // Get pack items and add them individually
                 $pack_items = Pack::getItems($product_id, (int) Context::getContext()->language->id);
 
                 if (defined('_LOGGER_')) {
@@ -534,7 +534,7 @@ class Miguel extends Module
                         }
                     } else {
                         if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Invalid pack item: ID=' . $pack_item->id . ', Loaded=' . (Validate::isLoadedObject($pack_product) ? 'yes' : 'no') . ', Reference=' . (isset($pack_product->reference) ? $pack_product->reference : 'empty'));
+                            $this->_logger->logDebug('Invalid pack item: ID=' . $pack_item->id . ', Loaded=' . (Validate::isLoadedObject($pack_product) ? 'yes' : 'no') . ', Reference=' . $pack_product->reference);
                         }
                     }
                 }
