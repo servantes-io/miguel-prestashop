@@ -432,18 +432,7 @@ class Miguel extends Module
 
         if (defined('_LOGGER_')) {
             $this->_logger->logDebug('Order reference: ' . $order->reference);
-            $this->_logger->logDebug('Order detail: ' . json_encode($order_detail));
         }
-
-        $address_str = '';
-        $address_str .= ((strlen($address_invoice->company) > 0) ? ($address_invoice->company . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->firstname) > 0 && strlen($address_invoice->lastname) > 0) ? ($address_invoice->firstname . ' ' . $address_invoice->lastname . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->address1) > 0) ? ($address_invoice->address1 . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->address2) > 0) ? ($address_invoice->address2 . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->postcode) > 0) ? ($address_invoice->postcode . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->city) > 0) ? ($address_invoice->city . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->country) > 0) ? ($address_invoice->country . ', ') : (''));
-        $address_str = substr($address_str, 0, -2);
 
         $body_orders = [];
         $body_orders['code'] = $order->reference;
@@ -451,7 +440,7 @@ class Miguel extends Module
             'id' => (string) $order->id_customer,
             'full_name' => $customer->firstname . ' ' . $customer->lastname,
             'email' => $customer->email,
-            'address' => $address_str,
+            'address' => MiguelApiCreateOrderRequest::composeAddress($address_invoice),
             'lang' => $language->iso_code,
         ];
         $body_orders['purchase_date'] = date(DATE_ISO8601, strtotime($order->date_add));
@@ -462,126 +451,7 @@ class Miguel extends Module
             $body_orders['paid'] = (($params['newOrderStatus']->paid) ? (true) : (false));
         }
         $body_orders['currency_code'] = $currency->iso_code;
-        $body_orders['products'] = [];
-
-        foreach ($order_detail as $key => $product) {
-            // Check if the product is a pack
-            $product_id = (int) $product['product_id'];
-
-            if (Pack::isPack($product_id)) {
-                if (defined('_LOGGER_')) {
-                    $this->_logger->logDebug('Processing pack product: ID=' . $product_id . ', Reference=' . $product['product_reference']);
-                }
-
-                // Get pack items and add them individually
-                $pack_items = Pack::getItems($product_id, (int) Context::getContext()->language->id);
-
-                if (defined('_LOGGER_')) {
-                    $this->_logger->logDebug('Pack items found: ' . count($pack_items) . ' for product ID: ' . $product_id);
-                }
-
-                if (empty($pack_items)) {
-                    if (defined('_LOGGER_')) {
-                        $this->_logger->logDebug('No pack items found, treating as regular product');
-                    }
-
-                    if (null == $product['product_reference'] || '' == $product['product_reference']) {
-                        // ignore products without reference
-                        continue;
-                    }
-
-                    // If no pack items found, treat as regular product
-                    $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
-                        $product['product_reference'],
-                        $product['original_product_price'],
-                        $product['unit_price_tax_excl']
-                    );
-                    continue;
-                }
-
-                // First, calculate total individual values for proportional distribution
-                $total_individual_value = 0;
-                $total_individual_regular_value = 0;
-                $valid_pack_items = [];
-
-                foreach ($pack_items as $pack_item) {
-                    $pack_product = new Product($pack_item->id, false, (int) Context::getContext()->language->id);
-
-                    if (defined('_LOGGER_')) {
-                        $this->_logger->logDebug('Processing pack item ID: ' . $pack_item->id . ', Quantity: ' . $pack_item->pack_quantity);
-                    }
-
-                    if (Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
-                        $individual_price = (float) $pack_product->getPrice(false);
-                        $individual_regular_price = (float) $pack_product->getPrice(false, null, 6, null, false, false);
-                        $item_quantity = (int) $pack_item->pack_quantity;
-
-                        $item_total_value = $individual_price * $item_quantity;
-                        $item_regular_total_value = $individual_regular_price * $item_quantity;
-
-                        $total_individual_value += $item_total_value;
-                        $total_individual_regular_value += $item_regular_total_value;
-
-                        $valid_pack_items[] = [
-                            'product' => $pack_product,
-                            'quantity' => $item_quantity,
-                            'individual_total' => $item_total_value,
-                            'individual_regular_total' => $item_regular_total_value,
-                        ];
-
-                        if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Valid pack item: ' . $pack_product->reference . ', Individual price: ' . $individual_price . ', Total value: ' . $item_total_value);
-                        }
-                    } else {
-                        if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Invalid pack item: ID=' . $pack_item->id . ', Loaded=' . (Validate::isLoadedObject($pack_product) ? 'yes' : 'no') . ', Reference=' . $pack_product->reference);
-                        }
-                    }
-                }
-
-                if (defined('_LOGGER_')) {
-                    $this->_logger->logDebug('Total individual value: ' . $total_individual_value . ', Pack price: ' . $product['unit_price_tax_excl'] . ', Valid items: ' . count($valid_pack_items));
-                }
-
-                // Now distribute pack price proportionally among valid items
-                if ($total_individual_value > 0 && count($valid_pack_items) > 0) {
-                    foreach ($valid_pack_items as $item_data) {
-                        $proportion = $item_data['individual_total'] / $total_individual_value;
-                        $regular_proportion = $total_individual_regular_value > 0 ?
-                            $item_data['individual_regular_total'] / $total_individual_regular_value : $proportion;
-
-                        $pack_item_unit_price = $product['unit_price_tax_excl'] * $proportion;
-                        $pack_item_original_price = $product['original_product_price'] * $regular_proportion;
-
-                        $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
-                            $item_data['product']->reference,
-                            $pack_item_original_price,
-                            $pack_item_unit_price
-                        );
-
-                        if (defined('_LOGGER_')) {
-                            $this->_logger->logDebug('Added pack item: ' . $item_data['product']->reference . ', Proportion: ' . round($proportion * 100, 2) . '%, Final price: ' . $pack_item_unit_price);
-                        }
-                    }
-                } else {
-                    if (defined('_LOGGER_')) {
-                        $this->_logger->logDebug('Cannot distribute pack price - no valid items or zero total value');
-                    }
-                }
-            } else {
-                if (null == $product['product_reference'] || '' == $product['product_reference']) {
-                    // ignore products without reference
-                    continue;
-                }
-
-                // Regular product (not a pack)
-                $body_orders['products'][] = MiguelApiCreateOrderRequest::createProductArray(
-                    $product['product_reference'],
-                    $product['original_product_price'],
-                    $product['unit_price_tax_excl']
-                );
-            }
-        }
+        $body_orders['products'] = MiguelApiCreateOrderRequest::createProductsArray($order_detail);
 
         if (defined('_LOGGER_')) {
             $this->_logger->logDebug('Order result: ' . json_encode($body_orders));
