@@ -51,7 +51,7 @@ class MiguelApiCreateOrderRequest
      *
      * @return array Array of products in JSON format
      */
-    public static function createProductsArray(array $order_detail)
+    public static function createProductsArray(\Order $order, array $order_detail)
     {
         $items = [];
 
@@ -81,8 +81,8 @@ class MiguelApiCreateOrderRequest
                     $pack_product = new \Product($pack_item->id, false, (int) \Context::getContext()->language->id);
 
                     if (\Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
-                        $individual_price = (float) $pack_product->getPrice(false);
-                        $individual_regular_price = (float) $pack_product->getPrice(false, null, 6, null, false, false);
+                        $individual_price = (float) \Product::getPriceStatic($pack_product->id, false, null, 6, null, false, true, 1, false, $order->id_customer, $order->id_cart);
+                        $individual_regular_price = (float) \Product::getPriceStatic($pack_product->id, false, null, 6, null, false, false, 1, false, $order->id_customer, $order->id_cart);
                         $item_quantity = (int) $pack_item->pack_quantity;
 
                         $item_total_value = $individual_price * $item_quantity;

@@ -452,7 +452,7 @@ class Miguel extends Module
             $body_orders['paid'] = (($params['newOrderStatus']->paid) ? (true) : (false));
         }
         $body_orders['currency_code'] = $currency->iso_code;
-        $body_orders['products'] = MiguelApiCreateOrderRequest::createProductsArray($order_detail);
+        $body_orders['products'] = MiguelApiCreateOrderRequest::createProductsArray($order, $order_detail);
 
         if (defined('_LOGGER_')) {
             $this->_logger->logDebug('Order result: ' . json_encode($body_orders));
