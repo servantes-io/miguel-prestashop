@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.1.0
+
+Added:
+- Proper support for bundles (aka Pack of products)
+
+
 ## v1.0.5
 
 Fixes:

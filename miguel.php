@@ -10,14 +10,17 @@
  * You must not modify, adapt or create derivative works of this source code
  *
  *  @author Pavel Vejnar <vejnar.p@gmail.com>
- *  @copyright  2022 - 2023 Servantes
+ *  @copyright  2022 - 2025 Servantes
  *  @license LICENSE.txt
  */
 require_once 'src/utils/miguel-settings.php';
 require_once 'src/utils/miguel-api-response.php';
+require_once 'src/utils/miguel-api-create-order-item.php';
+require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-error.php';
 require_once 'src/utils/polyfill-getallheaders.php';
 
+use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelSettings;
@@ -48,7 +51,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.0.5';
+        $this->version = '1.1.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -428,15 +431,9 @@ class Miguel extends Module
         }
         $order_detail = OrderDetail::getList($params['id_order']);
 
-        $address_str = '';
-        $address_str .= ((strlen($address_invoice->company) > 0) ? ($address_invoice->company . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->firstname) > 0 && strlen($address_invoice->lastname) > 0) ? ($address_invoice->firstname . ' ' . $address_invoice->lastname . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->address1) > 0) ? ($address_invoice->address1 . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->address2) > 0) ? ($address_invoice->address2 . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->postcode) > 0) ? ($address_invoice->postcode . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->city) > 0) ? ($address_invoice->city . ', ') : (''));
-        $address_str .= ((strlen($address_invoice->country) > 0) ? ($address_invoice->country . ', ') : (''));
-        $address_str = substr($address_str, 0, -2);
+        if (defined('_LOGGER_')) {
+            $this->_logger->logDebug('Order reference: ' . $order->reference);
+        }
 
         $body_orders = [];
         $body_orders['code'] = $order->reference;
@@ -444,7 +441,7 @@ class Miguel extends Module
             'id' => (string) $order->id_customer,
             'full_name' => $customer->firstname . ' ' . $customer->lastname,
             'email' => $customer->email,
-            'address' => $address_str,
+            'address' => MiguelApiCreateOrderRequest::composeAddress($address_invoice),
             'lang' => $language->iso_code,
         ];
         $body_orders['purchase_date'] = date(DATE_ISO8601, strtotime($order->date_add));
@@ -455,21 +452,10 @@ class Miguel extends Module
             $body_orders['paid'] = (($params['newOrderStatus']->paid) ? (true) : (false));
         }
         $body_orders['currency_code'] = $currency->iso_code;
-        $body_orders['products'] = [];
+        $body_orders['products'] = MiguelApiCreateOrderRequest::createProductsArray($order_detail);
 
-        foreach ($order_detail as $key => $product) {
-            if (null == $product['product_reference'] || '' == $product['product_reference']) {
-                // ignore products without reference
-                continue;
-            }
-
-            $body_orders['products'][] = [
-                'code' => $product['product_reference'],
-                'price' => [
-                    'regular_without_vat' => $product['original_product_price'],
-                    'sold_without_vat' => $product['unit_price_tax_excl'],
-                ],
-            ];
+        if (defined('_LOGGER_')) {
+            $this->_logger->logDebug('Order result: ' . json_encode($body_orders));
         }
 
         if (count($body_orders['products']) < 1) {
