@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 2024 Servantes
+ * 2025 Servantes
  *
  * This file is licenced under the Software License Agreement.
  * With the purchase or the installation of the software in your application
@@ -29,26 +29,6 @@ if (!defined('_PS_VERSION_')) {
 class MiguelApiCreateOrderRequest
 {
     /**
-     * Create a product array structure for orders
-     *
-     * @param string $code Product reference code
-     * @param float $regular_price Regular price without VAT
-     * @param float $sold_price Sold price without VAT
-     *
-     * @return array Product array structure
-     */
-    public static function createProductArray(string $code, float $regular_price, float $sold_price)
-    {
-        return [
-            'code' => $code,
-            'price' => [
-                'regular_without_vat' => $regular_price,
-                'sold_without_vat' => $sold_price,
-            ],
-        ];
-    }
-
-    /**
      * Compose address string from address object
      *
      * @param Address $address_invoice Address object
@@ -74,10 +54,10 @@ class MiguelApiCreateOrderRequest
      *
      * @param array $order_detail Order detail array
      *
-     * @return array Products array
+     * @return array Array of products in JSON format
      */
     public static function createProductsArray(array $order_detail) {
-        $products = [];
+        $items = [];
 
         foreach ($order_detail as $key => $product) {
             // Check if the product is a pack
@@ -92,7 +72,7 @@ class MiguelApiCreateOrderRequest
                     if (false == $product_array) {
                         continue;
                     }
-                    $products[] = $product_array;
+                    $items[] = $product_array;
                     continue;
                 }
 
@@ -134,7 +114,7 @@ class MiguelApiCreateOrderRequest
                         $pack_item_unit_price = $product['unit_price_tax_excl'] * $proportion;
                         $pack_item_original_price = $product['original_product_price'] * $regular_proportion;
 
-                        $products[] = self::createProductArray(
+                        $items[] = new MiguelApiCreateOrderItem(
                             $item_data['product']->reference,
                             $pack_item_original_price,
                             $pack_item_unit_price
@@ -146,23 +126,67 @@ class MiguelApiCreateOrderRequest
                 if (false == $product_array) {
                     continue;
                 }
-                $products[] = $product_array;
+                $items[] = $product_array;
             }
+        }
+
+        $items = self::removeDuplicateProducts($items);
+
+        $products = [];
+        foreach ($items as $item) {
+            $products[] = $item->jsonSerialize();
         }
 
         return $products;
     }
 
+    /**
+     * Create an array from a simple product
+     *
+     * @param array $product Product array
+     *
+     * @return MiguelApiCreateOrderItem|false
+     */
     private static function createArrayFromSimpleProduct(array $product) {
         if (null == $product['product_reference'] || '' == $product['product_reference']) {
             // ignore products without reference
             return false;
         }
 
-        return self::createProductArray(
+        return new MiguelApiCreateOrderItem(
             $product['product_reference'],
             $product['original_product_price'],
             $product['unit_price_tax_excl']
         );
+    }
+
+    /**
+     * Remove duplicate products with same code but different prices
+     * Keeps the product with the highest price
+     *
+     * @param MiguelApiCreateOrderItem[] $products Array of MiguelApiCreateOrderItem that may contain duplicates
+     *
+     * @return array Array of MiguelApiCreateOrderItem with duplicates removed
+     */
+    private static function removeDuplicateProducts(array $products) {
+        $unique_products_by_code = [];
+
+        foreach ($products as $product) {
+            $code = $product->getCode();
+            $current_price = $product->getSoldPrice();
+
+            // If we haven't seen this code before, add it
+            if (!isset($unique_products_by_code[$code])) {
+                $unique_products_by_code[$code] = $product;
+            } else {
+                // If we have seen this code, compare prices and keep the higher one
+                $existing_price = $unique_products_by_code[$code]->getSoldPrice();
+                if ($current_price > $existing_price) {
+                    $unique_products_by_code[$code] = $product;
+                }
+            }
+        }
+
+        return array_values($unique_products_by_code);
     }
 }
