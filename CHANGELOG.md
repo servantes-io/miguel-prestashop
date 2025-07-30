@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.1.1
+
+Added:
+- User-Agent header to every request to or from Miguel backend
+
+
 ## v1.1.0
 
 Added:

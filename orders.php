@@ -30,11 +30,12 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-header('Content-Type: application/json; charset=UTF-8');
-
 $module = Miguel::createInstance();
 $context = Context::getContext();
 $context->controller = new FrontController();
+
+header('Content-Type: application/json; charset=UTF-8');
+header('User-Agent: ' . $module->getUserAgent());
 
 $valid = $module->validateApiAccess();
 if ($valid !== true) {

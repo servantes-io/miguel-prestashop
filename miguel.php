@@ -51,7 +51,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.1.0';
+        $this->version = '1.1.1';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -869,6 +869,16 @@ class Miguel extends Module
     }
 
     /**
+     * Get the user agent for the request
+     *
+     * @return string
+     */
+    public function getUserAgent()
+    {
+        return 'MiguelForPrestashop/' . $this->version . '; Prestashop/' . _PS_VERSION_ . '; PHP/' . phpversion();
+    }
+
+    /**
      * @param int|false $lang_id
      *
      * @return string|false
@@ -889,13 +899,5 @@ class Miguel extends Module
         }
 
         return $language->iso_code;
-    }
-
-    /**
-     * @return string
-     */
-    private function getUserAgent()
-    {
-        return 'MiguelForPrestashop/' . $this->version . '; Prestashop/' . _PS_VERSION_ . '; PHP/' . phpversion();
     }
 }
