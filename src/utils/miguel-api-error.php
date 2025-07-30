@@ -32,7 +32,7 @@ class MiguelApiError implements \JsonSerializable
     private $message;
 
     /**
-     * @var mixed
+     * @var mixed|null
      */
     private $data;
 
@@ -60,16 +60,25 @@ class MiguelApiError implements \JsonSerializable
         return $res;
     }
 
+    /**
+     * @return string
+     */
     public function getCode(): string
     {
         return $this->code;
     }
 
+    /**
+     * @return string
+     */
     public function getMessage(): string
     {
         return $this->message;
     }
 
+    /**
+     * @return mixed|null
+     */
     public function getData()
     {
         return $this->data;
