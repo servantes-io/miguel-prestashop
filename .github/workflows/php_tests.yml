@@ -94,6 +94,8 @@ jobs:
           - '1.7'
           - '8.0'
           - '8.1'
+          - '8.2'
+          - '9.0.x'
           - 'latest'
     steps:
       - name: Checkout
