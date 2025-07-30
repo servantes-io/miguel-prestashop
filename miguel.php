@@ -62,7 +62,7 @@ class Miguel extends Module
         $this->displayName = $this->l('Miguel');
         $this->description = $this->l('Sell your e-books and audiobooks directly on your e-shop.');
         $this->confirmUninstall = $this->l('Are you sure you want to remove the add-on?');
-        $this->ps_versions_compliancy = ['min' => '1.7', 'max' => _PS_VERSION_];
+        $this->ps_versions_compliancy = ['min' => '1.7', 'max' => '8.99.99'];
 
         if (defined('_LOGGER_')) {
             $this->_logger = new FileLogger(0); // 0 == debug level, logDebug() won’t work without this.

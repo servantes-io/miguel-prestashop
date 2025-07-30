@@ -94,6 +94,7 @@ jobs:
           - '1.7'
           - '8.0'
           - '8.1'
+          - '8.2'
           - 'latest'
     steps:
       - name: Checkout
@@ -122,6 +123,7 @@ jobs:
     name: PHPUnit
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           # PrestaShop v1.7.8.x
@@ -144,11 +146,6 @@ jobs:
             prestashop-version: '8.2.x'
           - php-version: '8.1'
             prestashop-version: '8.2.x'
-          # PrestaShop v9.0.x
-          - php-version: '8.1'
-            prestashop-version: '9.0.x'
-          - php-version: '8.4'
-            prestashop-version: '9.0.x'
 
     services:
       mysql:
@@ -161,6 +158,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '14'
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
