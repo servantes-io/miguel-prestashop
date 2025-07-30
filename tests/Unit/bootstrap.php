@@ -41,7 +41,4 @@ require_once __DIR__ . '/Utility/DatabaseTestCase.php';
 require_once __DIR__ . '/Utility/ContextMocker.php';
 require_once __DIR__ . '/Utility/EntityCreator.php';
 
-$module = Miguel::createInstance();
-$module->install();
-
 Miguel\Utils\MiguelSettings::reset();
