@@ -94,6 +94,8 @@ jobs:
           - '1.7'
           - '8.0'
           - '8.1'
+          - '8.2'
+          - '9.0.x'
           - 'latest'
     steps:
       - name: Checkout
@@ -122,45 +124,66 @@ jobs:
     name: PHPUnit
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           # PrestaShop v1.7.8.x
           - php-version: '7.2'
             prestashop-version: '1.7.8.x'
+            node-version: '14'
           - php-version: '7.4'
             prestashop-version: '1.7.8.x'
+            node-version: '14'
           # PrestaShop v8.0.x
           - php-version: '7.2'
             prestashop-version: '8.0.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.0.x'
+            node-version: '14'
           # PrestaShop v8.1.x
           - php-version: '7.2'
             prestashop-version: '8.1.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.1.x'
+            node-version: '14'
           # PrestaShop v8.2.x
           - php-version: '7.2'
             prestashop-version: '8.2.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.2.x'
+            node-version: '14'
           # PrestaShop v9.0.x
           - php-version: '8.1'
             prestashop-version: '9.0.x'
+            node-version: '20'
           - php-version: '8.4'
             prestashop-version: '9.0.x'
-
-    services:
-      mysql:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: 'password'
-        ports:
-          - 3306/tcp
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+            node-version: '20'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup MySQL
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          mysql version: '8.0'
+          mysql database: 'prestashop'
+          mysql root password: 'password'
+
+      - name: Wait for MySQL to be ready
+        uses: nick-fields/retry@v3
+        with:
+          timeout_seconds: 10
+          max_attempts: 5
+          command: mysql -h127.0.0.1 -uroot -ppassword -e "show databases;"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -168,14 +191,13 @@ jobs:
           php-version: ${{ matrix.php-version }}
           coverage: xdebug
           tools: composer:v2
-          extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
+          extensions: mbstring, intl, gd, xml, dom, json, fileinfo, curl, zip, iconv, simplexml
+
+      - name: Change MySQL authentication method
+        run: mysql -h127.0.0.1 -uroot -ppassword -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'password'; FLUSH PRIVILEGES;"
 
       - name: Test MySQL Connection
-        uses: nick-fields/retry@v3
-        with:
-          timeout_seconds: 10
-          max_attempts: 3
-          command: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
+        run: mysql -h127.0.0.1 -uroot -ppassword -e "show databases;"
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
@@ -185,7 +207,7 @@ jobs:
       - name: Install PrestaShop
         run: bash .github/scripts/install-prestashop.sh
         env:
-          MYSQL_PORT: ${{ job.services.mysql.ports[3306] }}
+          MYSQL_PORT: 3306
 
       - name: Install module
         run: |
@@ -207,3 +229,5 @@ jobs:
       - name: Run PHPUnit
         run: composer exec phpunit -- -c modules/miguel/tests/Unit/phpunit.xml
         working-directory: vendor2/PrestaShop
+        env:
+          SYMFONY_DEPRECATIONS_HELPER: disabled
