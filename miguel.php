@@ -875,7 +875,7 @@ class Miguel extends Module
      */
     public function getUserAgent()
     {
-        return 'MiguelForPrestashop/' . $this->version . '; Prestashop/' . _PS_VERSION_ . '; PHP/' . phpversion();
+        return 'MiguelForPrestashop/' . $this->version . '; Prestashop/' . _PS_VERSION_ . '; PHP/' . phpversion() . '; ' . Tools::getShopDomainSsl(true);
     }
 
     /**
