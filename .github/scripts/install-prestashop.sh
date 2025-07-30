@@ -26,18 +26,16 @@ pushd vendor2/PrestaShop > /dev/null
     mysed "s/\$sfContainer->get('translator')/\\\\Context::getContext()->getTranslator()/g" classes/Language.php
     cat classes/Language.php | grep -A 3 -B 3 'translator = '
 
-    # Fix Doctrine DBAL server version issue for PrestaShop 9 compatibility
-    # This addresses the "An exception occurred while establishing a connection to figure out your platform version" error
-    echo "* Adding Doctrine DBAL server_version parameter fix for MySQL compatibility"
-    if [ -f "app/config/parameters.yml" ]; then
-        # Add server_version parameter to existing database configuration
-        mysed '/database_driver:.*mysql/a\    database_server_version: "8.0"' app/config/parameters.yml
-    fi
-
     # Clean up needed for StarterTheme tests
     mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "
       DROP DATABASE IF EXISTS \`prestashop\`;
       DROP DATABASE IF EXISTS \`test_prestashop\`;
+    "
+
+    # Create databases
+    mysql -u root --password=password --port ${MYSQL_PORT} -h 127.0.0.1 -e "
+      CREATE DATABASE \`prestashop\`;
+      CREATE DATABASE \`test_prestashop\`;
     "
 
     # Remove cache
@@ -49,9 +47,7 @@ pushd vendor2/PrestaShop > /dev/null
     make assets
 
     echo "* Installing PrestaShop, this may take a while ...";
-    pushd install-dev > /dev/null
-      php index_cli.php --language=en --country=cs --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --prefix=miguel_ --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
-    popd > /dev/null
+    php install-dev/index_cli.php --language=en --country=cs --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --prefix=miguel_ --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
     if test ! $? -eq 0; then
         echo "Installed failed, displaying errors from logs:"
         echo
