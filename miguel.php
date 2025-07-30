@@ -515,6 +515,7 @@ class Miguel extends Module
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Authorization: Bearer ' . $configuration['token'];
         $headers[] = 'Accept-Language: ' . $this->getLanguageCode();
+        $headers[] = 'User-Agent: ' . $this->getUserAgent();
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); // set return type json
@@ -568,6 +569,7 @@ class Miguel extends Module
         $headers[] = 'Content-Type: application/json';
         $headers[] = 'Authorization: Bearer ' . $configuration['token'];
         $headers[] = 'Accept-Language: ' . $this->getLanguageCode();
+        $headers[] = 'User-Agent: ' . $this->getUserAgent();
         curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
 
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); // set return type json
@@ -887,5 +889,13 @@ class Miguel extends Module
         }
 
         return $language->iso_code;
+    }
+
+    /**
+     * @return string
+     */
+    private function getUserAgent()
+    {
+        return 'MiguelForPrestashop/' . $this->version . '; Prestashop/' . _PS_VERSION_ . '; PHP/' . phpversion();
     }
 }
