@@ -37,6 +37,9 @@ pushd vendor2/PrestaShop > /dev/null
     # Remove logs
     rm -rf var/logs/*
 
+    make composer
+    make assets
+
     echo "* Installing PrestaShop, this may take a while ...";
     pushd install-dev > /dev/null
       php index_cli.php --language=en --country=cs --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --prefix=miguel_ --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
