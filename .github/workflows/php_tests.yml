@@ -95,6 +95,7 @@ jobs:
           - '8.0'
           - '8.1'
           - '8.2'
+          - '9.0'
           - 'latest'
     steps:
       - name: Checkout
@@ -146,6 +147,11 @@ jobs:
             prestashop-version: '8.2.x'
           - php-version: '8.1'
             prestashop-version: '8.2.x'
+          # PrestaShop v9.0.x
+          - php-version: '8.1'
+            prestashop-version: '9.0.x'
+          - php-version: '8.4'
+            prestashop-version: '9.0.x'
 
     services:
       mysql:
