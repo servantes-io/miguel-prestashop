@@ -22,20 +22,20 @@ if (!defined('_PS_VERSION_')) {
 
 class MiguelSettings
 {
-    const API_TOKEN_PRODUCTION_KEY = 'MIGUEL_API_TOKEN_PRODUCTION';
-    const API_TOKEN_STAGING_KEY = 'MIGUEL_API_TOKEN_STAGING';
-    const API_TOKEN_TEST_KEY = 'MIGUEL_API_TOKEN_TEST';
-    const API_TOKEN_OWN_KEY = 'MIGUEL_API_TOKEN_OWN';
-    const API_SERVER_KEY = 'MIGUEL_API_SERVER';
-    const API_SERVER_OWN_KEY = 'MIGUEL_API_SERVER_OWN';
-    const NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY = 'MIGUEL_NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY';
-    const NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY = 'MIGUEL_NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS';
-    const API_ENABLE_KEY = 'MIGUEL_API_ENABLE';
+    public const API_TOKEN_PRODUCTION_KEY = 'MIGUEL_API_TOKEN_PRODUCTION';
+    public const API_TOKEN_STAGING_KEY = 'MIGUEL_API_TOKEN_STAGING';
+    public const API_TOKEN_TEST_KEY = 'MIGUEL_API_TOKEN_TEST';
+    public const API_TOKEN_OWN_KEY = 'MIGUEL_API_TOKEN_OWN';
+    public const API_SERVER_KEY = 'MIGUEL_API_SERVER';
+    public const API_SERVER_OWN_KEY = 'MIGUEL_API_SERVER_OWN';
+    public const NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY = 'MIGUEL_NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY';
+    public const NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY = 'MIGUEL_NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS';
+    public const API_ENABLE_KEY = 'MIGUEL_API_ENABLE';
 
-    const ENV_PROD = 'prod';
-    const ENV_STAGING = 'staging';
-    const ENV_TEST = 'test';
-    const ENV_OWN = 'own';
+    public const ENV_PROD = 'prod';
+    public const ENV_STAGING = 'staging';
+    public const ENV_TEST = 'test';
+    public const ENV_OWN = 'own';
 
     /**
      * @return array<string,mixed>
