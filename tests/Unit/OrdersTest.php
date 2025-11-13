@@ -22,7 +22,10 @@ class OrdersTest extends DatabaseTestCase
         $this->previousErrorReportingSetting = error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
 
         // Suppress output to console
-        $this->setOutputCallback(function() {});
+        if (method_exists($this, 'setOutputCallback'))
+        {
+            $this->setOutputCallback(function() {});
+        }
     }
 
     protected function tearDown(): void
