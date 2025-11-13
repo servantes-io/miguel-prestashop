@@ -73,6 +73,6 @@ class ProductsTest extends DatabaseTestCase
     private function sut(): string
     {
         include __DIR__ . '/../../products.php';
-        return $this->getActualOutput();
+        return $this->getActualOutputForAssertion();
     }
 }

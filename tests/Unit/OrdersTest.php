@@ -134,6 +134,6 @@ class OrdersTest extends DatabaseTestCase
     private function sut(): string
     {
         include __DIR__ . '/../../orders.php';
-        return $this->getActualOutput();
+        return $this->getActualOutputForAssertion();
     }
 }

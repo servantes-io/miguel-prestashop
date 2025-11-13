@@ -123,6 +123,6 @@ class OrderStateCallbackTest extends DatabaseTestCase
         }
 
         include __DIR__ . '/../../order-state-callback.php';
-        return $this->getActualOutput();
+        return $this->getActualOutputForAssertion();
     }
 }
