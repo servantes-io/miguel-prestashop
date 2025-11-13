@@ -13,4 +13,7 @@ fi
 pushd vendor2/PrestaShop > /dev/null
     # install deps
     composer install --prefer-dist --no-progress --no-ansi --no-interaction
+
+    echo "* Building PrestaShop assets ...";
+    make assets
 popd > /dev/null
