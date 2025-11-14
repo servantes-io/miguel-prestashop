@@ -4,7 +4,7 @@ Prestashop module to sell watermarked ebooks and audiobooks through [Miguel](htt
 
 ## Installation
 
-Installation is done in the classic way: you download our module and install it in your e-shop. You can download the module at the following link: [Download the latest version](https://github.com/servantes-io/miguel-prestashop/releases/latest). The module is created for Prestashop v1.7.8 and v8. Prestashop v9 is not tested.
+Installation is done in the classic way: you download our module and install it in your e-shop. You can download the module at the following link: [Download the latest version](https://github.com/servantes-io/miguel-prestashop/releases/latest). The module is created for Prestashop v1.7.8, v8 and v9.
 
 Open the administration of your e-shop. Each Prestashop installation has its own administration address, so the procedure in this step is individual.
 
@@ -81,7 +81,7 @@ For more info look at [docs](https://docs.miguel.servantes.cz/en/docs/platforms/
 
 | Module version | Branch   | PHP version | Prestashop version |
 |----------------|----------|-------------|--------------------|
-| `>= 1.0.0`     | `main`   | 7.1 - 8.4   | 1.7.8.x - 8.2.x    |
+| `>= 1.0.0`     | `main`   | 7.1 - 8.4   | 1.7.8.x - 9.0.x    |
 
 ### Further module limitations
 

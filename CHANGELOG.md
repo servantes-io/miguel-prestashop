@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.2.0
+
+Added:
+- Support for PrestaShop v9.0
+
+
 ## v1.1.1
 
 Added:
