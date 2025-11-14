@@ -38,13 +38,15 @@ pushd vendor2/PrestaShop > /dev/null
     rm -rf var/logs/*
 
     echo "* Installing PrestaShop, this may take a while ...";
-    php install-dev/index_cli.php --language=en --country=fr --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
-    if test ! $? -eq 0; then
-        echo "Installed failed, displaying errors from logs:"
-        echo
-        cat var/logs/* | grep -v error
-        exit 1
-    fi
+    pushd install-dev > /dev/null
+      php index_cli.php --language=en --country=fr --domain=localhost --db_server=127.0.0.1:${MYSQL_PORT} --db_name=prestashop --db_user=root --db_password=password --db_create=1 --name=prestashop.unit.test --email=demo@prestashop.com --password=prestashop_demo
+      if test ! $? -eq 0; then
+          echo "Installed failed, displaying errors from logs:"
+          echo
+          cat var/logs/* | grep -v error
+          exit 1
+      fi
+    popd > /dev/null
 
     # create test db
     composer run-script create-test-db

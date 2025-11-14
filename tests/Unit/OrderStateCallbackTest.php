@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use Miguel;
 use Miguel\Utils\MiguelSettings;
+use Tests\Unit\Utility\MiguelMock;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class OrderStateCallbackTest extends DatabaseTestCase
@@ -20,7 +21,10 @@ class OrderStateCallbackTest extends DatabaseTestCase
         $this->previousErrorReportingSetting = error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
 
         // Suppress output to console
-        $this->setOutputCallback(function() {});
+        if (method_exists($this, 'setOutputCallback'))
+        {
+            $this->setOutputCallback(function() {});
+        }
     }
 
     protected function tearDown(): void
@@ -83,6 +87,11 @@ class OrderStateCallbackTest extends DatabaseTestCase
 
         MiguelSettings::setEnabled(true);
         MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
+        MiguelSettings::setNewStateAutoChange(true, 5); // Set some state ID for Miguel only
+
+        $order = $this->entityCreator->createOrder();
+        $order->reference = '1234';
+        $order->save();
 
         // TEST
         $output = $this->sut([
@@ -100,26 +109,34 @@ class OrderStateCallbackTest extends DatabaseTestCase
         ]);
 
         // ASSERT
-        $json = json_decode($output, true);
-        $this->assertIsArray($json['orders']);
+        $expected_output = json_encode([
+            'result' => 'state changed',
+            'debug' => '',
+        ]);
+
+        $this->assertJsonStringEqualsJsonString($output, $expected_output);
     }
 
     private function sut($input = null): string
     {
         if ($input !== null)
         {
-            $mockModule = $this->createMock(Miguel::class)
-                // valid token
-                ->method('validateApiAccess')
-                ->willReturn(true)
-                // mock payload
-                ->method('readFileContent')
-                ->willReturn(json_encode($input));
+            $mockModule = new MiguelMock();
+            $mockModule->readFileContentReturnValue = json_encode($input);
+            $mockModule->validateApiAccessReturnValue = true;
 
             Miguel::setSharedInstance($mockModule);
         }
 
         include __DIR__ . '/../../order-state-callback.php';
-        return $this->getActualOutput();
+
+        if (method_exists($this, 'getActualOutputForAssertion'))
+        {
+            return $this->getActualOutputForAssertion();
+        }
+        else
+        {
+            return $this->getActualOutput();
+        }
     }
 }

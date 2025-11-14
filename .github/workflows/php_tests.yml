@@ -95,6 +95,7 @@ jobs:
           - '8.0'
           - '8.1'
           - '8.2'
+          - '9.0'
           - 'latest'
     steps:
       - name: Checkout
@@ -117,7 +118,7 @@ jobs:
         run: docker run -tid --rm -v ps-volume:/var/www/html --name temp-ps prestashop/prestashop:${{ matrix.presta-version }}
 
       - name: Run PHPStan
-        run: docker run --rm --volumes-from temp-ps -v $PWD:/web/module -e _PS_ROOT_DIR_=/var/www/html --workdir=/web/module ghcr.io/phpstan/phpstan:1 analyse --configuration=/web/module/tests/phpstan/phpstan.neon --error-format github
+        run: docker run --rm --volumes-from temp-ps -v $PWD:/web/module -e _PS_ROOT_DIR_=/var/www/html --workdir=/web/module ghcr.io/phpstan/phpstan:1-php8.1 analyse --configuration=/web/module/tests/phpstan/phpstan.neon --error-format github
 
   phpunit:
     name: PHPUnit
@@ -129,23 +130,38 @@ jobs:
           # PrestaShop v1.7.8.x
           - php-version: '7.2'
             prestashop-version: '1.7.8.x'
+            node-version: '14'
           - php-version: '7.4'
             prestashop-version: '1.7.8.x'
+            node-version: '14'
           # PrestaShop v8.0.x
           - php-version: '7.2'
             prestashop-version: '8.0.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.0.x'
+            node-version: '14'
           # PrestaShop v8.1.x
           - php-version: '7.2'
             prestashop-version: '8.1.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.1.x'
+            node-version: '14'
           # PrestaShop v8.2.x
           - php-version: '7.2'
             prestashop-version: '8.2.x'
+            node-version: '14'
           - php-version: '8.1'
             prestashop-version: '8.2.x'
+            node-version: '14'
+          # PrestaShop v9.0.x
+          - php-version: '8.1'
+            prestashop-version: '9.0.x'
+            node-version: '20'
+          - php-version: '8.4'
+            prestashop-version: '9.0.x'
+            node-version: '20'
 
     services:
       mysql:
@@ -162,7 +178,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: ${{ matrix.node-version }}
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -178,6 +194,12 @@ jobs:
           timeout_seconds: 10
           max_attempts: 3
           command: mysql -u root -h '127.0.0.1' --password=password --port ${{ job.services.mysql.ports[3306] }} -e "show databases"
+
+      - name: Cache PrestaShop
+        uses: actions/cache@v4
+        with:
+          path: vendor2/PrestaShop
+          key: prestashop-${{ matrix.prestashop-version }}
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
@@ -209,3 +231,11 @@ jobs:
       - name: Run PHPUnit
         run: composer exec phpunit -- -c modules/miguel/tests/Unit/phpunit.xml
         working-directory: vendor2/PrestaShop
+
+      - name: Cleanup
+        if: always()
+        run:
+          php vendor2/PrestaShop/bin/console prestashop:module uninstall miguel || true
+          rm -rf vendor2/PrestaShop/modules/miguel
+          rm -rf vendor2/PrestaShop/var/cache
+          rm -rf vendor2/PrestaShop/var/logs

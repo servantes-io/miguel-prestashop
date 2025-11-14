@@ -18,7 +18,10 @@ class ProductsTest extends DatabaseTestCase
         $this->previousErrorReportingSetting = error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
 
         // Suppress output to console
-        $this->setOutputCallback(function() {});
+        if (method_exists($this, 'setOutputCallback'))
+        {
+            $this->setOutputCallback(function() {});
+        }
     }
 
     protected function tearDown(): void
@@ -70,6 +73,14 @@ class ProductsTest extends DatabaseTestCase
     private function sut(): string
     {
         include __DIR__ . '/../../products.php';
-        return $this->getActualOutput();
+
+        if (method_exists($this, 'getActualOutputForAssertion'))
+        {
+            return $this->getActualOutputForAssertion();
+        }
+        else
+        {
+            return $this->getActualOutput();
+        }
     }
 }
