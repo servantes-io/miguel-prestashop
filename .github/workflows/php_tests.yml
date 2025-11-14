@@ -231,3 +231,11 @@ jobs:
       - name: Run PHPUnit
         run: composer exec phpunit -- -c modules/miguel/tests/Unit/phpunit.xml
         working-directory: vendor2/PrestaShop
+
+      - name: Cleanup
+        if: always()
+        run:
+          php vendor2/PrestaShop/bin/console prestashop:module uninstall miguel || true
+          rm -rf vendor2/PrestaShop/modules/miguel
+          rm -rf vendor2/PrestaShop/var/cache
+          rm -rf vendor2/PrestaShop/var/logs
