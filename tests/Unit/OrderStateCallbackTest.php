@@ -121,15 +121,9 @@ class OrderStateCallbackTest extends DatabaseTestCase
     {
         if ($input !== null)
         {
-            $mockModule = $this->createMock(Miguel::class);
-
-            // valid token
-            $mockModule->method('validateApiAccess')
-                ->willReturn(true);
-
-            // mock payload
-            $mockModule->method('readFileContent')
-                ->willReturn(json_encode($input));
+            $mockModule = new MiguelMock();
+            $mockModule->readFileContentReturnValue = json_encode($input);
+            $mockModule->validateApiAccessReturnValue = true;
 
             Miguel::setSharedInstance($mockModule);
         }
