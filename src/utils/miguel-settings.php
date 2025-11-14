@@ -193,4 +193,13 @@ class MiguelSettings
 
         return (int) $new_state_id_raw;
     }
+
+    public static function setNewStateAutoChange($miguel_only, $state_id)
+    {
+        if ($miguel_only) {
+            \Configuration::updateValue(self::NEW_STATE_AUTO_CHANGE_MIGUEL_ONLY_KEY, $state_id);
+        } else {
+            \Configuration::updateValue(self::NEW_STATE_AUTO_CHANGE_MIGUEL_OTHERS_KEY, $state_id);
+        }
+    }
 }
