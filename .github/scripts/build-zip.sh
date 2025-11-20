@@ -14,13 +14,6 @@ pushd $tmpdir > /dev/null
         rm -rf miguel/$i
     done
 
-    # Remove blank lines after opening <?php tags (PrestaShop coding standard)
-    find miguel -name "*.php" -type f -exec sh -c '
-        if [ -s "$1" ] && head -n2 "$1" | grep -q "^<?php$" && head -n2 "$1" | tail -n1 | grep -q "^$"; then
-            sed -i "" "2d" "$1"
-        fi
-    ' _ {} \;
-
     find miguel -name ".DS_Store" -depth -exec rm {} \;
 
     zip "${result}" -r miguel
