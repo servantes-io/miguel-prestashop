@@ -1,5 +1,4 @@
 <?php
-
 /**
  * 2025 Servantes
  *
