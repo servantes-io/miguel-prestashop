@@ -50,7 +50,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.2.0';
+        $this->version = '1.2.1';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
