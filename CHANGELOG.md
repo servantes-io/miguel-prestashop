@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.2.2
+
+Fixed:
+- detection of paid state by getting info from Prestashop instead of calculating it in module
+
 ## v1.2.0
 
 Added:

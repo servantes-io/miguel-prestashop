@@ -50,7 +50,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.2.1';
+        $this->version = '1.2.2';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -446,9 +446,11 @@ class Miguel extends Module
         $body_orders['purchase_date'] = date(DATE_ISO8601, strtotime($order->date_add));
         if (isset($params['getUpdatedOrders'])) {
             $body_orders['update_date'] = date(DATE_ISO8601, strtotime($order->date_upd)); // aktuální datum tam je až po provedení funkce
-            $body_orders['paid'] = (($order->total_paid_real == $order->total_paid) ? (true) : (false));
+        }
+        if (isset($params['newOrderStatus'])) {
+            $body_orders['paid'] = ($params['newOrderStatus']->paid ? (true) : (false));
         } else {
-            $body_orders['paid'] = (($params['newOrderStatus']->paid) ? (true) : (false));
+            $body_orders['paid'] = ($order->hasBeenPaid() ? (true) : (false));
         }
         $body_orders['currency_code'] = $currency->iso_code;
         $body_orders['products'] = MiguelApiCreateOrderRequest::createProductsArray($order, $order_detail);
