@@ -50,7 +50,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.2.2';
+        $this->version = '1.2.3';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -134,7 +134,8 @@ class Miguel extends Module
                 $module_state = 'info_setup_module';
             }
         } elseif ($api_configuration['api_enable']) { // je povoleno api, validuji token
-            $test_key = $this->curlPost('/v1/prestashop/connect', $this->getPrestashopDetails());
+            $prestashopDetails = $this->getPrestashopDetails();
+            $test_key = $this->curlPost('/v2/eshop/prestashop/connect', $prestashopDetails);
             if (false == $test_key) {
                 $module_state = 'warning_api_fail';
                 // pokud se nepodaří přihlásit, tak deaktivuji API
@@ -608,39 +609,121 @@ class Miguel extends Module
     public function getPrestashopDetails()
     {
         $ps = [];
-        $ps['ps_version'] = _PS_VERSION_;
-        $ps['module_version'] = $this->version;
-        $ps['base_url'] = Tools::getShopDomainSsl(true);
-        $ps['base_uri'] = __PS_BASE_URI__;
+        $ps['psVersion'] = _PS_VERSION_;
+        $ps['moduleVersion'] = $this->version;
+        $ps['baseUrl'] = Tools::getShopDomainSsl(true);
+        $ps['baseUri'] = __PS_BASE_URI__;
 
         return $ps;
     }
 
-    public function getAllProducts()
-    {
-        $id_lang = (int) Context::getContext()->language->id;
+   public function getAllProducts()
+{
+    try {
+        $context = Context::getContext();
+
+        $id_shop = (int)Configuration::get('PS_SHOP_DEFAULT');
+        $id_lang = (int)Configuration::get('PS_LANG_DEFAULT');
+        $id_curr = (int)Configuration::get('PS_CURRENCY_DEFAULT');
+        $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
+
+        $context->shop = new Shop($id_shop);
+        $context->language = new Language($id_lang);
+        $context->currency = Currency::getCurrencyInstance($id_curr);
+        $context->country = new Country($id_country);
+        $context->shop->id = $id_shop;
+
+        $currencyIso = $context->currency->iso_code;
+
+        if (!isset($context->cart) || !$context->cart->id) {
+            $context->cart = new Cart();
+        }
+        if (!isset($context->customer) || !$context->customer->id) {
+            $context->customer = new Customer();
+        }
+
+        $id_lang = (int)$context->language->id;
         $start = 0;
         $limit = 100000;
         $order_by = 'id_product';
         $order_way = 'DESC';
         $id_category = false;
         $only_active = false;
-        $context = null;
+        $products_context = null;
 
-        $all_products = Product::getProducts($id_lang, $start, $limit, $order_by, $order_way, $id_category, $only_active, $context);
+        $all_products = Product::getProducts($id_lang, $start, $limit, $order_by, $order_way, $id_category, $only_active, $products_context);
         $all_products_ret = [];
 
-        foreach ($all_products as $key => $product) {
-            $all_products_ret[] = [
-                'id_product' => $product['id_product'],
-                'reference' => $product['reference'],
-                'name' => $product['name'],
-                'active' => (($product['active']) ? (true) : (false)),
-            ];
+        foreach ($all_products as $product_data) {
+            $id_product = (int)$product_data['id_product'];
+            $product = new Product($id_product, false, $id_lang);
+
+            $combinations = $product->getAttributeCombinations($id_lang);
+
+            if ($combinations) {
+                $comb_array = [];
+                foreach ($combinations as $combination) {
+                    $id_product_attribute = (int)$combination['id_product_attribute'];
+
+                    $comb_array[$id_product_attribute]['id_product_attribute'] = $id_product_attribute;
+                    $comb_array[$id_product_attribute]['reference'] = $combination['reference'];
+                    $comb_array[$id_product_attribute]['attributes'][] = $combination['group_name'] . ': ' . $combination['attribute_name'];
+                }
+
+                foreach ($comb_array as $id_attr => $comb_data) {
+                    $priceWithTax = Product::getPriceStatic(
+                        $id_product, true, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                        $specific_price_output, true, true, $context
+                    );
+
+                    $priceWithoutTax = Product::getPriceStatic(
+                        $id_product, false, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                        $specific_price_output, true, true, $context
+                    );
+
+                    $all_products_ret[] = [
+                        'id_product' => $id_product,
+                        'id_product_attribute' => $id_attr,
+                        'reference' => !empty($comb_data['reference']) ? $comb_data['reference'] : $product_data['reference'],
+                        'price' => (float)number_format($priceWithTax, 3, '.', ''),
+                        'price_without_tax' => (float)number_format($priceWithoutTax, 3, '.', ''),
+                        'tax_rate' => (float)Tax::getProductTaxRate($id_product),
+                        'currency' => $currencyIso,
+                        'name' => $product_data['name'] . ' (' . implode(', ', $comb_data['attributes']) . ')',
+                        'active' => (bool)$product_data['active'],
+                    ];
+                }
+            } else {
+                $priceWithTax = Product::getPriceStatic(
+                    $id_product, true, null, 6, null, false, true, 1, false, null, null, null,
+                    $specific_price_output, true, true, $context
+                );
+
+                $priceWithoutTax = Product::getPriceStatic(
+                    $id_product, false, null, 6, null, false, true, 1, false, null, null, null,
+                    $specific_price_output, true, true, $context
+                );
+
+                $all_products_ret[] = [
+                    'id_product' => $id_product,
+                    'id_product_attribute' => 0,
+                    'reference' => $product_data['reference'],
+                    'price' => (float)number_format($priceWithTax, 3, '.', ''),
+                    'price_without_tax' => (float)number_format($priceWithoutTax, 3, '.', ''),
+                    'tax_rate' => (float)Tax::getProductTaxRate($id_product),
+                    'currency' => $currencyIso,
+                    'name' => $product_data['name'],
+                    'active' => (bool)$product_data['active'],
+                ];
+            }
         }
 
         return $all_products_ret;
+
+    } catch (\Exception $e) {
+        return array("error" => $e->getMessage());
     }
+}
 
     public function getUpdatedOrders($updated_since)
     {
