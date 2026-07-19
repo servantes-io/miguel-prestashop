@@ -17,6 +17,7 @@ require_once 'src/utils/miguel-api-response.php';
 require_once 'src/utils/miguel-api-create-order-item.php';
 require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-error.php';
+require_once 'src/utils/miguel-api-dispatcher.php';
 require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
