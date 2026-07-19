@@ -837,6 +837,37 @@ class Miguel extends Module
             }
         }
 
+        // Fallback: some proxies strip the Authorization header. Accept the same
+        // token via the X-Miguel-Token custom header, which is stripped far less often.
+        $customToken = $this->getCustomTokenHeader();
+        if (!empty($customToken)) {
+            return $customToken;
+        }
+
+        return false;
+    }
+
+    /**
+     * Reads the API token from the X-Miguel-Token custom header. Used as a fallback
+     * when a proxy strips the Authorization header.
+     *
+     * @return string|false
+     */
+    public function getCustomTokenHeader()
+    {
+        if (isset($_SERVER['HTTP_X_MIGUEL_TOKEN'])) {
+            return trim($_SERVER['HTTP_X_MIGUEL_TOKEN']);
+        }
+
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'x-miguel-token') {
+                    return trim($value);
+                }
+            }
+        }
+
         return false;
     }
 
