@@ -38,9 +38,9 @@ class MiguelApiDispatcher
 
     /**
      * @param string $resource one of: orders, products, order-state-callback
-     * @param string $method   HTTP method (GET/POST)
-     * @param array $get       query parameters
-     * @param string $rawBody  raw request body (for POST resources)
+     * @param string $method HTTP method (GET/POST)
+     * @param array $get query parameters
+     * @param string $rawBody raw request body (for POST resources)
      *
      * @return MiguelApiResponse
      */
