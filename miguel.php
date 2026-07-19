@@ -17,6 +17,7 @@ require_once 'src/utils/miguel-api-response.php';
 require_once 'src/utils/miguel-api-create-order-item.php';
 require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-error.php';
+require_once 'src/utils/miguel-api-dispatcher.php';
 require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
@@ -50,7 +51,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.2.3';
+        $this->version = '1.3.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -613,6 +614,11 @@ class Miguel extends Module
         $ps['moduleVersion'] = $this->version;
         $ps['baseUrl'] = Tools::getShopDomainSsl(true);
         $ps['baseUri'] = __PS_BASE_URI__;
+        $ps['endpoints'] = [
+            'orders' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'orders'], true),
+            'products' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'products'], true),
+            'orderStateCallback' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order-state-callback'], true),
+        ];
 
         return $ps;
     }
@@ -834,6 +840,37 @@ class Miguel extends Module
         if (!empty($headers)) {
             if (preg_match('/Bearer\s(\S+)/i', $headers, $matches)) {
                 return $matches[1];
+            }
+        }
+
+        // Fallback: some proxies strip the Authorization header. Accept the same
+        // token via the X-Miguel-Token custom header, which is stripped far less often.
+        $customToken = $this->getCustomTokenHeader();
+        if (!empty($customToken)) {
+            return $customToken;
+        }
+
+        return false;
+    }
+
+    /**
+     * Reads the API token from the X-Miguel-Token custom header. Used as a fallback
+     * when a proxy strips the Authorization header.
+     *
+     * @return string|false
+     */
+    public function getCustomTokenHeader()
+    {
+        if (isset($_SERVER['HTTP_X_MIGUEL_TOKEN'])) {
+            return trim($_SERVER['HTTP_X_MIGUEL_TOKEN']);
+        }
+
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $key => $value) {
+                if (strtolower($key) === 'x-miguel-token') {
+                    return trim($value);
+                }
             }
         }
 

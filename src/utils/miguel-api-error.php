@@ -111,6 +111,16 @@ class MiguelApiError implements \JsonSerializable
         return new self('payload.invalid', "Invalid payload: $message");
     }
 
+    public static function resourceNotFound($resource): MiguelApiError
+    {
+        return new self('resource.not_found', "Resource $resource not found");
+    }
+
+    public static function methodNotAllowed($method): MiguelApiError
+    {
+        return new self('method.not_allowed', "Method $method not allowed");
+    }
+
     public static function unknownError(): MiguelApiError
     {
         return new self('unknown.error', 'Unknown error');

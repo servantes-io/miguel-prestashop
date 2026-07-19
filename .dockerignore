@@ -1,0 +1,6 @@
+.git
+vendor2
+vendor
+run
+node_modules
+*.zip

@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## v1.3.0
+
+Added:
+
+- Native PrestaShop API endpoint via a module front controller (`index.php?fc=module&module=miguel&controller=api&resource=…`), routed through the shop's `index.php` so it is no longer blocked by Cloudflare/Apache rules against direct PHP access in `/modules/`.
+- The module now reports its endpoint URLs to Miguel on connect (`endpoints` in the connect payload).
+- Fallback API-token transport via the `X-Miguel-Token` header for environments that strip `Authorization`.
+
+Changed:
+
+- The legacy `orders.php`, `products.php`, and `order-state-callback.php` scripts now delegate to the shared dispatcher and are deprecated (kept for backward compatibility).
+
 ## v1.2.3
 
 Added:

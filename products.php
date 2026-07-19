@@ -21,12 +21,18 @@ je nutné se ověřit pomocí tokenu
 require_once __DIR__ . '/../../config/config.inc.php';
 require_once __DIR__ . '/miguel.php';
 
-use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelApiDispatcher;
 
 // required thing for PrestaShop validator (needs to be after config.inc.php)
 if (!defined('_PS_VERSION_')) {
     exit;
 }
+
+/*
+ * @deprecated Use the module front controller instead:
+ * index.php?fc=module&module=miguel&controller=api&resource=products
+ * Kept for backward compatibility; scheduled for removal in a future major version.
+ */
 
 $module = Miguel::createInstance();
 $context = Context::getContext();
@@ -35,10 +41,7 @@ $context->controller = new FrontController();
 header('Content-Type: application/json; charset=UTF-8');
 header('User-Agent: ' . $module->getUserAgent());
 
-$valid = $module->validateApiAccess();
-if ($valid !== true) {
-    echo json_encode($valid, JSON_PRETTY_PRINT);
-} else {
-    $output = MiguelApiResponse::success($module->getAllProducts(), 'products');
-    echo json_encode($output, JSON_PRETTY_PRINT);
-}
+$dispatcher = new MiguelApiDispatcher($module);
+$output = $dispatcher->dispatch('products', 'GET', $_GET, '');
+
+echo json_encode($output, JSON_PRETTY_PRINT);

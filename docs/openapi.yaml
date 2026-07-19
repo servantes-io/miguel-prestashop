@@ -1,0 +1,549 @@
+openapi: 3.0.3
+info:
+  title: Miguel PrestaShop API
+  version: "1"
+  license:
+    name: Proprietary — see LICENSE.txt
+    url: https://github.com/servantes-io/miguel-prestashop/blob/main/LICENSE.txt
+  description: >
+    HTTP API exposed by the Miguel PrestaShop module for the Miguel backend.
+    Three endpoints: list updated orders, list products, and a callback that
+    switches a PrestaShop order status.
+
+
+    ## Routing & URLs
+
+    Each endpoint is reachable at two equivalent URLs that hit the same handler
+    with the same request/response contract:
+
+
+    * **Recommended — module front controller** (routed through the shop's
+      `index.php`, so it is not blocked by Cloudflare/Apache rules against direct
+      `.php` access in `/modules/`):
+
+      `{shop}/index.php?fc=module&module=miguel&controller=api&resource={resource}`
+
+      (or, with PrestaShop friendly URLs enabled, `{shop}/module/miguel/api?resource={resource}`)
+
+    * **Deprecated — direct-access scripts** (kept for backward compatibility,
+      scheduled for removal in a future major version): the paths documented
+      below — `/modules/miguel/orders.php`, `.../products.php`,
+      `.../order-state-callback.php`.
+
+
+    The `{resource}` values are `orders`, `products`, and `order-state-callback`.
+    The paths in this document use the direct-access form because an OpenAPI path
+    cannot contain a query string; the contract is identical for the recommended
+    front-controller URL. The module reports the exact per-resource
+    front-controller URLs to the Miguel backend in the `endpoints` object of the
+    `/v2/eshop/prestashop/connect` payload (`endpoints.orders`,
+    `endpoints.products`, `endpoints.orderStateCallback`).
+
+
+    ## Response contract
+
+    **Every** response is returned with HTTP status `200` and a JSON envelope
+    `{ "result": ..., "debug": "", ... }`. Errors are conveyed **in the body**
+    (`result: false` plus an `error` object), never via HTTP status codes — the
+    backend must inspect the envelope, not the HTTP status.
+
+
+    ## Authentication
+
+    Every request must carry the API token configured in the module settings,
+    either as `Authorization: Bearer <token>` (preferred) or, for environments
+    where a proxy strips the Authorization header, as the `X-Miguel-Token: <token>`
+    header. A missing token yields `api_key.not_set`; a wrong token yields
+    `api_key.invalid`.
+
+servers:
+  - url: https://{domain}{basePath}
+    variables:
+      domain:
+        default: example.com
+        description: Shop domain (host).
+      basePath:
+        default: ""
+        description: >
+          PrestaShop base URI for shops installed in a subfolder (PrestaShop
+          `__PS_BASE_URI__`). Empty for a root install, e.g. "/shop" otherwise.
+
+security:
+  - bearerAuth: []
+  - miguelTokenAuth: []
+
+tags:
+  - name: orders
+    description: Read orders.
+  - name: products
+    description: Read the product catalogue.
+  - name: callback
+    description: Order-status callback invoked by Miguel.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Authorization: Bearer <token> — the API token from the module settings."
+    miguelTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Miguel-Token
+      description: Fallback token header used when the Authorization header is stripped by a proxy.
+
+  schemas:
+    ApiError:
+      type: object
+      description: Error detail carried inside an error envelope.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code.
+          enum:
+            - api_key.not_set
+            - api_key.invalid
+            - module.disabled
+            - configuration.not_set
+            - argument.not_set
+            - payload.invalid
+            - resource.not_found
+            - method.not_allowed
+            - unknown.error
+          example: api_key.invalid
+        message:
+          type: string
+          description: Human-readable message.
+          example: API key invalid
+        data:
+          type: object
+          nullable: true
+          description: >
+            Optional extra context. Present only for some errors — e.g.
+            `api_key.not_set` includes the received request headers under `headers`.
+          additionalProperties: true
+
+    ErrorEnvelope:
+      type: object
+      description: Returned (with HTTP 200) for any failed request. Applies to every endpoint.
+      required: [result, debug, error]
+      properties:
+        result:
+          type: boolean
+          enum: [false]
+          example: false
+        debug:
+          type: string
+          description: Reserved, always an empty string (kept for backward compatibility).
+          example: ""
+        error:
+          $ref: '#/components/schemas/ApiError'
+
+    OrderProductPrice:
+      type: object
+      properties:
+        regular_without_vat:
+          type: number
+          format: float
+          description: Regular (list) unit price excluding VAT.
+          example: 199.0
+        sold_without_vat:
+          type: number
+          format: float
+          description: Actually sold unit price excluding VAT (after discounts).
+          example: 149.0
+
+    OrderProduct:
+      type: object
+      description: >
+        A single Miguel product line in an order. Only products with a reference
+        (Miguel product code) are included; other lines are omitted. Pack items
+        are expanded to their individual Miguel sub-products with the pack price
+        distributed proportionally.
+      properties:
+        code:
+          type: string
+          description: Product reference (Miguel product code).
+          example: "9788024271101"
+        price:
+          $ref: '#/components/schemas/OrderProductPrice'
+
+    OrderUser:
+      type: object
+      properties:
+        id:
+          type: string
+          description: PrestaShop customer ID (as a string).
+          example: "42"
+        full_name:
+          type: string
+          example: Jan Novák
+        email:
+          type: string
+          format: email
+          example: jan@example.com
+        address:
+          type: string
+          description: >
+            Invoice address flattened to a single comma-separated string
+            (company, name, address1, address2, postcode, city, country — empty
+            parts omitted).
+          example: "Jan Novák, Václavské náměstí 1, 11000, Praha, CZ"
+        lang:
+          type: string
+          description: Customer language ISO code.
+          example: cs
+
+    Order:
+      type: object
+      description: >
+        An order that contains at least one Miguel product. Orders with no Miguel
+        products are omitted from the list.
+      properties:
+        code:
+          type: string
+          description: Order reference.
+          example: XKBKNABJK
+        user:
+          $ref: '#/components/schemas/OrderUser'
+        purchase_date:
+          type: string
+          format: date-time
+          description: Order creation date (ISO 8601).
+          example: "2024-01-15T10:30:00+0000"
+        update_date:
+          type: string
+          format: date-time
+          description: Order last-modification date (ISO 8601). Present in the orders listing.
+          example: "2024-01-16T08:05:00+0000"
+        paid:
+          type: boolean
+          description: Whether the order has been paid.
+        currency_code:
+          type: string
+          description: ISO 4217 currency code of the order.
+          example: CZK
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderProduct'
+
+    OrdersResponse:
+      type: object
+      description: Successful response of the orders endpoint.
+      required: [result, debug, orders]
+      properties:
+        result:
+          type: boolean
+          enum: [true]
+          example: true
+        debug:
+          type: string
+          example: ""
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+
+    Product:
+      type: object
+      description: >
+        A sellable product row. Products with combinations produce one row per
+        combination (with `id_product_attribute` set and the combination name
+        appended to `name`); simple products produce a single row with
+        `id_product_attribute` = 0.
+      properties:
+        id_product:
+          type: integer
+          example: 15
+        id_product_attribute:
+          type: integer
+          description: Combination ID, or 0 for a simple product / product without combinations.
+          example: 0
+        reference:
+          type: string
+          description: Product (or combination) reference; falls back to the product reference when the combination has none.
+          example: "9788024271101"
+        price:
+          type: number
+          format: float
+          description: Unit price including tax (3 decimal places).
+          example: 199.0
+        price_without_tax:
+          type: number
+          format: float
+          description: Unit price excluding tax (3 decimal places).
+          example: 164.463
+        tax_rate:
+          type: number
+          format: float
+          description: Product tax rate as a percentage.
+          example: 21.0
+        currency:
+          type: string
+          description: ISO 4217 code of the shop default currency the prices are expressed in.
+          example: CZK
+        name:
+          type: string
+          description: Product name; for combinations the attribute values are appended in parentheses.
+          example: "My eBook (Format: EPUB)"
+        active:
+          type: boolean
+          description: Whether the product is active/published.
+
+    ProductsResponse:
+      type: object
+      description: Successful response of the products endpoint.
+      required: [result, debug, products]
+      properties:
+        result:
+          type: boolean
+          enum: [true]
+          example: true
+        debug:
+          type: string
+          example: ""
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+
+    OrderStateCallbackProductFormat:
+      type: object
+      properties:
+        format:
+          type: string
+          description: Delivered file format.
+          example: epub
+
+    OrderStateCallbackProduct:
+      type: object
+      properties:
+        formats:
+          type: array
+          description: >
+            Delivered Miguel formats for this product. An empty array marks a
+            non-Miguel product in the order (used to detect mixed orders).
+          items:
+            $ref: '#/components/schemas/OrderStateCallbackProductFormat'
+
+    OrderStateCallbackRequest:
+      type: object
+      required: [code]
+      description: Callback payload sent by Miguel to switch a PrestaShop order status.
+      properties:
+        code:
+          type: string
+          description: Order reference to update.
+          example: XKBKNABJK
+        miguel_state:
+          type: string
+          description: >
+            Miguel-side processing state. The order status is only changed when
+            this equals `finished`.
+          example: finished
+        products:
+          type: array
+          description: Products in the order and their delivered formats.
+          items:
+            $ref: '#/components/schemas/OrderStateCallbackProduct'
+
+    OrderStateCallbackResponse:
+      type: object
+      description: >
+        Successful response of the order-state callback. Note: the `result` field
+        carries the outcome **string** (not a boolean) because the payload data
+        key is itself `result`.
+      required: [result, debug]
+      properties:
+        result:
+          type: string
+          description: Outcome of the state change.
+          enum:
+            - state changed
+            - "waiting for status: finished"
+            - no products
+            - auto change not set
+            - unknown order id
+            - multiple same order id
+            - "error: missing id_order"
+          example: state changed
+        debug:
+          type: string
+          example: ""
+
+paths:
+  /modules/miguel/orders.php:
+    get:
+      tags: [orders]
+      summary: List orders updated since a given date
+      operationId: getOrders
+      description: >
+        Returns every order whose `date_upd` is on or after `updated_since` and
+        that contains at least one Miguel product.
+
+
+        **Recommended URL:** `{shop}/index.php?fc=module&module=miguel&controller=api&resource=orders&updated_since=...`
+        (the front-controller form; this direct-access path is the deprecated
+        equivalent with an identical contract).
+      parameters:
+        - in: query
+          name: updated_since
+          required: true
+          schema:
+            type: string
+          description: >
+            Date/time threshold. Any value parseable by PHP `strtotime()` is
+            accepted (ISO 8601, `Y-m-d H:i:s`, Unix timestamp, relative strings).
+          example: "2024-01-01 00:00:00"
+      responses:
+        "200":
+          description: >
+            Always HTTP 200 — either the orders envelope or an error envelope
+            (missing `updated_since` → `argument.not_set`; auth failures →
+            `api_key.not_set` / `api_key.invalid`).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrdersResponse'
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                success:
+                  value:
+                    result: true
+                    debug: ""
+                    orders:
+                      - code: XKBKNABJK
+                        user:
+                          id: "42"
+                          full_name: Jan Novák
+                          email: jan@example.com
+                          address: "Jan Novák, Václavské náměstí 1, 11000, Praha, CZ"
+                          lang: cs
+                        purchase_date: "2024-01-15T10:30:00+0000"
+                        update_date: "2024-01-16T08:05:00+0000"
+                        paid: true
+                        currency_code: CZK
+                        products:
+                          - code: "9788024271101"
+                            price:
+                              regular_without_vat: 199.0
+                              sold_without_vat: 149.0
+                argument_missing:
+                  value:
+                    result: false
+                    debug: ""
+                    error:
+                      code: argument.not_set
+                      message: Argument updated_since not set
+
+  /modules/miguel/products.php:
+    get:
+      tags: [products]
+      summary: List all products with prices
+      operationId: getProducts
+      description: >
+        Returns all products (and one row per combination) with tax-included and
+        tax-excluded unit prices, tax rate, and currency.
+
+
+        **Recommended URL:** `{shop}/index.php?fc=module&module=miguel&controller=api&resource=products`
+        (the front-controller form; this direct-access path is the deprecated
+        equivalent with an identical contract).
+      responses:
+        "200":
+          description: >
+            Always HTTP 200 — either the products envelope or an error envelope
+            (auth failures → `api_key.not_set` / `api_key.invalid`).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProductsResponse'
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                success:
+                  value:
+                    result: true
+                    debug: ""
+                    products:
+                      - id_product: 15
+                        id_product_attribute: 0
+                        reference: "9788024271101"
+                        price: 199.0
+                        price_without_tax: 164.463
+                        tax_rate: 21.0
+                        currency: CZK
+                        name: My eBook
+                        active: true
+
+  /modules/miguel/order-state-callback.php:
+    post:
+      tags: [callback]
+      summary: Switch a PrestaShop order status
+      operationId: orderStateCallback
+      description: >
+        Called by Miguel when processing of an order finishes, to move the
+        PrestaShop order to the configured status. The status is changed only when
+        `miguel_state` is `finished` and the module's automatic status switching is
+        configured; otherwise a descriptive outcome string is returned (still HTTP
+        200; `result: false` only on validation/auth errors).
+
+
+        **Recommended URL:** `{shop}/index.php?fc=module&module=miguel&controller=api&resource=order-state-callback`
+        (the front-controller form; this direct-access path is the deprecated
+        equivalent with an identical contract).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStateCallbackRequest'
+            example:
+              code: XKBKNABJK
+              miguel_state: finished
+              products:
+                - formats:
+                    - format: epub
+                    - format: pdf
+      responses:
+        "200":
+          description: >
+            Always HTTP 200 — either the callback outcome envelope or an error
+            envelope (`payload.invalid` for a missing body / missing `code`,
+            `method.not_allowed` for a non-POST request, auth failures, etc.).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/OrderStateCallbackResponse'
+                  - $ref: '#/components/schemas/ErrorEnvelope'
+              examples:
+                state_changed:
+                  value:
+                    result: state changed
+                    debug: ""
+                waiting:
+                  value:
+                    result: "waiting for status: finished"
+                    debug: ""
+                unknown_order:
+                  value:
+                    result: unknown order id
+                    debug: ""
+                missing_payload:
+                  value:
+                    result: false
+                    debug: ""
+                    error:
+                      code: payload.invalid
+                      message: "Invalid payload: payload is required"
+                missing_code:
+                  value:
+                    result: false
+                    debug: ""
+                    error:
+                      code: payload.invalid
+                      message: "Invalid payload: code not set"

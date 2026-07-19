@@ -20,13 +20,18 @@ tato stránka slouží jako API, pro automatickou změnu stavů v PS
 require_once __DIR__ . '/../../config/config.inc.php';
 require_once __DIR__ . '/miguel.php';
 
-use Miguel\Utils\MiguelApiError;
-use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelApiDispatcher;
 
 // required thing for PrestaShop validator (needs to be after config.inc.php)
 if (!defined('_PS_VERSION_')) {
     exit;
 }
+
+/*
+ * @deprecated Use the module front controller instead:
+ * index.php?fc=module&module=miguel&controller=api&resource=order-state-callback
+ * Kept for backward compatibility; scheduled for removal in a future major version.
+ */
 
 $module = Miguel::createInstance();
 $context = Context::getContext();
@@ -35,19 +40,7 @@ $context->controller = new FrontController();
 header('Content-Type: application/json; charset=UTF-8');
 header('User-Agent: ' . $module->getUserAgent());
 
-$valid = $module->validateApiAccess();
-if ($valid !== true) {
-    echo json_encode($valid, JSON_PRETTY_PRINT);
-} else {
-    $json = $module->readFileContent('php://input');
-    $data = json_decode($json, true);
-    if (null === $data) {
-        $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
-    } elseif (false == array_key_exists('code', $data)) {
-        $output = MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
-    } else {
-        $output = MiguelApiResponse::success($module->setOrderStates($data), 'result');
-    }
+$dispatcher = new MiguelApiDispatcher($module);
+$output = $dispatcher->dispatch('order-state-callback', 'POST', $_GET, $module->readFileContent('php://input'));
 
-    echo json_encode($output);
-}
+echo json_encode($output);
