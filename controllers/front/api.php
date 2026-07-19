@@ -32,17 +32,20 @@ class MiguelApiModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        /** @var Miguel $module */
+        $module = $this->module;
+
         $resource = Tools::getValue('resource');
         if (!is_string($resource)) {
             $resource = '';
         }
 
-        $dispatcher = new MiguelApiDispatcher($this->module);
+        $dispatcher = new MiguelApiDispatcher($module);
         $response = $dispatcher->dispatch(
             $resource,
             isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET',
             $_GET,
-            $this->module->readFileContent('php://input')
+            $module->readFileContent('php://input')
         );
 
         // Discard any buffered theme/partial output so the response is pure JSON.
@@ -51,7 +54,7 @@ class MiguelApiModuleFrontController extends ModuleFrontController
         }
 
         header('Content-Type: application/json; charset=UTF-8');
-        header('User-Agent: ' . $this->module->getUserAgent());
+        header('User-Agent: ' . $module->getUserAgent());
 
         echo json_encode($response);
         exit;
