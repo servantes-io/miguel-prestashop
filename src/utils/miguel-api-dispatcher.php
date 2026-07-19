@@ -44,7 +44,7 @@ class MiguelApiDispatcher
      *
      * @return MiguelApiResponse
      */
-    public function dispatch($resource, $method, array $get, $rawBody)
+    public function dispatch(string $resource, string $method, array $get, string $rawBody): MiguelApiResponse
     {
         $valid = $this->module->validateApiAccess();
         if ($valid !== true) {
@@ -77,7 +77,7 @@ class MiguelApiDispatcher
                 if (null === $data) {
                     return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
                 }
-                if (!array_key_exists('code', $data)) {
+                if (!is_array($data) || !array_key_exists('code', $data)) {
                     return MiguelApiResponse::error(MiguelApiError::invalidPayload('code not set'));
                 }
 

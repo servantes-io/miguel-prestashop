@@ -79,4 +79,26 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertSame('products', $response->getDataKey());
         $this->assertIsArray($response->getData());
     }
+
+    public function testOrderStateCallbackWithEmptyBodyReturnsPayloadInvalid()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-state-callback', 'POST', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('payload.invalid', $response->getData()->getCode());
+        $this->assertSame('Invalid payload: payload is required', $response->getData()->getMessage());
+    }
+
+    public function testOrderStateCallbackWithoutCodeReturnsPayloadInvalid()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-state-callback', 'POST', [], json_encode(['miguel_state' => 'x']));
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('payload.invalid', $response->getData()->getCode());
+        $this->assertSame('Invalid payload: code not set', $response->getData()->getMessage());
+    }
 }
