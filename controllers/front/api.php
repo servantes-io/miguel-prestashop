@@ -32,9 +32,14 @@ class MiguelApiModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
+        $resource = Tools::getValue('resource');
+        if (!is_string($resource)) {
+            $resource = '';
+        }
+
         $dispatcher = new MiguelApiDispatcher($this->module);
         $response = $dispatcher->dispatch(
-            Tools::getValue('resource'),
+            $resource,
             isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET',
             $_GET,
             $this->module->readFileContent('php://input')
@@ -57,6 +62,15 @@ class MiguelApiModuleFrontController extends ModuleFrontController
      * The parent implementation renders the 503 maintenance page and exits.
      */
     protected function displayMaintenancePage()
+    {
+        // intentionally left blank
+    }
+
+    /**
+     * Keep the API reachable regardless of geolocation restrictions — the bearer
+     * token is the access gate. The parent renders a 403 restricted-country page.
+     */
+    protected function displayRestrictedCountryPage()
     {
         // intentionally left blank
     }
