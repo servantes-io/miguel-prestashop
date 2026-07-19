@@ -16,7 +16,7 @@
 - New utility classes live in the `Miguel\Utils` namespace (matches existing `src/utils/*`).
 - Response contract is **HTTP 200 + JSON envelope** for every outcome (success and error). Never emit real HTTP error status codes — the backend parser depends on the envelope.
 - Resource identifiers are exactly: `orders`, `products`, `order-state-callback`. These strings are hardcoded on the backend — do not rename.
-- Test environment: DB-backed tests extend `Tests\Unit\Utility\DatabaseTestCase` and require the dockerized test stack. Bring it up and run the full suite with `make test`. Run a single test with `vendor/bin/phpunit -c tests/Unit/phpunit.xml --filter <TestName>` once the environment (MySQL + PrestaShop in `vendor2/PrestaShop`) is available.
+- Test environment: tests run **entirely in Docker** — there is no host PHP. Run the full suite with `make test-docker`; run a single test with `make test-docker ARGS="--filter <TestName>"`. (The plan's older `vendor/bin/phpunit -c tests/Unit/phpunit.xml --filter <TestName>` invocations map to `make test-docker ARGS="--filter <TestName>"`.) The first run clones + installs PrestaShop into cached volumes (slow); subsequent runs are ~30–60s and reset `test_prestashop` for isolation. DB-backed tests extend `Tests\Unit\Utility\DatabaseTestCase`.
 - Bump version to `1.3.0` (done in the final task) — do not touch `$this->version` in intermediate tasks.
 
 ---
