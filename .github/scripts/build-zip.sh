@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 tmpdir=$(mktemp -d)
-ignore=".git .github .idea .vscode .gitignore .php-cs-fixer.dist.php .php-cs-fixer.cache composer.* tests run doc docs vendor vendor2 docker-compose.yml docker-compose.test.yml Makefile *.zip"
+ignore=".git .github .idea .vscode .gitignore .dockerignore .php-cs-fixer.dist.php .php-cs-fixer.cache composer.* tests run doc docs vendor vendor2 docker Dockerfile.test docker-compose.yml docker-compose.test.yml Makefile .superpowers *.zip"
 result="$(pwd)/miguel.zip"
 
 rm -rf "$result"
