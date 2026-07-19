@@ -1,0 +1,42 @@
+services:
+  db:
+    # PrestaShop 1.7.8 (the seeded version) installs cleanly only on MySQL 5.7,
+    # matching the CI 1.7.8 lane. mysql:5.7 has no arm64 image, so emulate amd64.
+    image: mysql:5.7
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: prestashop
+    volumes:
+      - ps_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  phpunit:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/project
+      # PrestaShop is cloned + installed into this named volume once, then reused;
+      # the host tree (including the corrupt host vendor2) is never touched.
+      - ps_prestashop:/project/vendor2
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASS: password
+      DB_NAME: prestashop
+      # 1.7.8.x pairs with PHP 7.4 (Dockerfile.test) + MySQL 5.7 (db service).
+      PRESTASHOP_VERSION: "1.7.8.10"
+    entrypoint: ["/project/docker/test-entrypoint.sh"]
+
+volumes:
+  ps_db_data:
+  ps_prestashop:
