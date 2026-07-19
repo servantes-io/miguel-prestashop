@@ -617,113 +617,112 @@ class Miguel extends Module
         return $ps;
     }
 
-   public function getAllProducts()
-{
-    try {
-        $context = Context::getContext();
+    public function getAllProducts()
+    {
+        try {
+            $context = Context::getContext();
 
-        $id_shop = (int)Configuration::get('PS_SHOP_DEFAULT');
-        $id_lang = (int)Configuration::get('PS_LANG_DEFAULT');
-        $id_curr = (int)Configuration::get('PS_CURRENCY_DEFAULT');
-        $id_country = (int)Configuration::get('PS_COUNTRY_DEFAULT');
+            $id_shop = (int) Configuration::get('PS_SHOP_DEFAULT');
+            $id_lang = (int) Configuration::get('PS_LANG_DEFAULT');
+            $id_curr = (int) Configuration::get('PS_CURRENCY_DEFAULT');
+            $id_country = (int) Configuration::get('PS_COUNTRY_DEFAULT');
 
-        $context->shop = new Shop($id_shop);
-        $context->language = new Language($id_lang);
-        $context->currency = Currency::getCurrencyInstance($id_curr);
-        $context->country = new Country($id_country);
-        $context->shop->id = $id_shop;
+            $context->shop = new Shop($id_shop);
+            $context->language = new Language($id_lang);
+            $context->currency = Currency::getCurrencyInstance($id_curr);
+            $context->country = new Country($id_country);
+            $context->shop->id = $id_shop;
 
-        $currencyIso = $context->currency->iso_code;
+            $currencyIso = $context->currency->iso_code;
 
-        if (!isset($context->cart) || !$context->cart->id) {
-            $context->cart = new Cart();
-        }
-        if (!isset($context->customer) || !$context->customer->id) {
-            $context->customer = new Customer();
-        }
+            if (!isset($context->cart) || !$context->cart->id) {
+                $context->cart = new Cart();
+            }
+            if (!isset($context->customer) || !$context->customer->id) {
+                $context->customer = new Customer();
+            }
 
-        $id_lang = (int)$context->language->id;
-        $start = 0;
-        $limit = 100000;
-        $order_by = 'id_product';
-        $order_way = 'DESC';
-        $id_category = false;
-        $only_active = false;
-        $products_context = null;
+            $id_lang = (int) $context->language->id;
+            $start = 0;
+            $limit = 100000;
+            $order_by = 'id_product';
+            $order_way = 'DESC';
+            $id_category = false;
+            $only_active = false;
+            $products_context = null;
 
-        $all_products = Product::getProducts($id_lang, $start, $limit, $order_by, $order_way, $id_category, $only_active, $products_context);
-        $all_products_ret = [];
+            $all_products = Product::getProducts($id_lang, $start, $limit, $order_by, $order_way, $id_category, $only_active, $products_context);
+            $all_products_ret = [];
 
-        foreach ($all_products as $product_data) {
-            $id_product = (int)$product_data['id_product'];
-            $product = new Product($id_product, false, $id_lang);
+            foreach ($all_products as $product_data) {
+                $id_product = (int) $product_data['id_product'];
+                $product = new Product($id_product, false, $id_lang);
 
-            $combinations = $product->getAttributeCombinations($id_lang);
+                $combinations = $product->getAttributeCombinations($id_lang);
 
-            if ($combinations) {
-                $comb_array = [];
-                foreach ($combinations as $combination) {
-                    $id_product_attribute = (int)$combination['id_product_attribute'];
+                if ($combinations) {
+                    $comb_array = [];
+                    foreach ($combinations as $combination) {
+                        $id_product_attribute = (int) $combination['id_product_attribute'];
 
-                    $comb_array[$id_product_attribute]['id_product_attribute'] = $id_product_attribute;
-                    $comb_array[$id_product_attribute]['reference'] = $combination['reference'];
-                    $comb_array[$id_product_attribute]['attributes'][] = $combination['group_name'] . ': ' . $combination['attribute_name'];
-                }
+                        $comb_array[$id_product_attribute]['id_product_attribute'] = $id_product_attribute;
+                        $comb_array[$id_product_attribute]['reference'] = $combination['reference'];
+                        $comb_array[$id_product_attribute]['attributes'][] = $combination['group_name'] . ': ' . $combination['attribute_name'];
+                    }
 
-                foreach ($comb_array as $id_attr => $comb_data) {
+                    foreach ($comb_array as $id_attr => $comb_data) {
+                        $priceWithTax = Product::getPriceStatic(
+                            $id_product, true, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                            $specific_price_output, true, true, $context
+                        );
+
+                        $priceWithoutTax = Product::getPriceStatic(
+                            $id_product, false, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                            $specific_price_output, true, true, $context
+                        );
+
+                        $all_products_ret[] = [
+                            'id_product' => $id_product,
+                            'id_product_attribute' => $id_attr,
+                            'reference' => !empty($comb_data['reference']) ? $comb_data['reference'] : $product_data['reference'],
+                            'price' => (float) number_format($priceWithTax, 3, '.', ''),
+                            'price_without_tax' => (float) number_format($priceWithoutTax, 3, '.', ''),
+                            'tax_rate' => (float) Tax::getProductTaxRate($id_product),
+                            'currency' => $currencyIso,
+                            'name' => $product_data['name'] . ' (' . implode(', ', $comb_data['attributes']) . ')',
+                            'active' => (bool) $product_data['active'],
+                        ];
+                    }
+                } else {
                     $priceWithTax = Product::getPriceStatic(
-                        $id_product, true, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                        $id_product, true, null, 6, null, false, true, 1, false, null, null, null,
                         $specific_price_output, true, true, $context
                     );
 
                     $priceWithoutTax = Product::getPriceStatic(
-                        $id_product, false, $id_attr, 6, null, false, true, 1, false, null, null, null,
+                        $id_product, false, null, 6, null, false, true, 1, false, null, null, null,
                         $specific_price_output, true, true, $context
                     );
 
                     $all_products_ret[] = [
                         'id_product' => $id_product,
-                        'id_product_attribute' => $id_attr,
-                        'reference' => !empty($comb_data['reference']) ? $comb_data['reference'] : $product_data['reference'],
-                        'price' => (float)number_format($priceWithTax, 3, '.', ''),
-                        'price_without_tax' => (float)number_format($priceWithoutTax, 3, '.', ''),
-                        'tax_rate' => (float)Tax::getProductTaxRate($id_product),
+                        'id_product_attribute' => 0,
+                        'reference' => $product_data['reference'],
+                        'price' => (float) number_format($priceWithTax, 3, '.', ''),
+                        'price_without_tax' => (float) number_format($priceWithoutTax, 3, '.', ''),
+                        'tax_rate' => (float) Tax::getProductTaxRate($id_product),
                         'currency' => $currencyIso,
-                        'name' => $product_data['name'] . ' (' . implode(', ', $comb_data['attributes']) . ')',
-                        'active' => (bool)$product_data['active'],
+                        'name' => $product_data['name'],
+                        'active' => (bool) $product_data['active'],
                     ];
                 }
-            } else {
-                $priceWithTax = Product::getPriceStatic(
-                    $id_product, true, null, 6, null, false, true, 1, false, null, null, null,
-                    $specific_price_output, true, true, $context
-                );
-
-                $priceWithoutTax = Product::getPriceStatic(
-                    $id_product, false, null, 6, null, false, true, 1, false, null, null, null,
-                    $specific_price_output, true, true, $context
-                );
-
-                $all_products_ret[] = [
-                    'id_product' => $id_product,
-                    'id_product_attribute' => 0,
-                    'reference' => $product_data['reference'],
-                    'price' => (float)number_format($priceWithTax, 3, '.', ''),
-                    'price_without_tax' => (float)number_format($priceWithoutTax, 3, '.', ''),
-                    'tax_rate' => (float)Tax::getProductTaxRate($id_product),
-                    'currency' => $currencyIso,
-                    'name' => $product_data['name'],
-                    'active' => (bool)$product_data['active'],
-                ];
             }
+
+            return $all_products_ret;
+        } catch (Exception $e) {
+            return ['error' => $e->getMessage()];
         }
-
-        return $all_products_ret;
-
-    } catch (\Exception $e) {
-        return array("error" => $e->getMessage());
     }
-}
 
     public function getUpdatedOrders($updated_since)
     {
@@ -932,12 +931,12 @@ class Miguel extends Module
         } elseif (1 == $configuration['api_enable']) {
             if ($configuration['token'] == $token) {
                 return true;
-            } else {
-                return MiguelApiResponse::error(MiguelApiError::apiKeyInvalid());
             }
-        } else {
-            return MiguelApiResponse::error(MiguelApiError::unknownError());
+
+            return MiguelApiResponse::error(MiguelApiError::apiKeyInvalid());
         }
+
+        return MiguelApiResponse::error(MiguelApiError::unknownError());
     }
 
     /**
