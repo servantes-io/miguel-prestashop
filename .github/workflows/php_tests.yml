@@ -127,40 +127,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # PrestaShop v1.7.8.x
+          # PrestaShop 1.7.8 (pinned to latest tag; the 1.7.8.x branch is no longer published)
           - php-version: '7.2'
-            prestashop-version: '1.7.8.x'
+            prestashop-version: '1.7.8.11'
             node-version: '14'
           - php-version: '7.4'
-            prestashop-version: '1.7.8.x'
+            prestashop-version: '1.7.8.11'
             node-version: '14'
-          # PrestaShop v8.0.x
+          # PrestaShop 8.0 (pinned to latest tag; the 8.0.x branch is no longer published)
           - php-version: '7.2'
-            prestashop-version: '8.0.x'
+            prestashop-version: '8.0.5'
             node-version: '14'
           - php-version: '8.1'
-            prestashop-version: '8.0.x'
+            prestashop-version: '8.0.5'
             node-version: '14'
-          # PrestaShop v8.1.x
+          # PrestaShop 8.1 (pinned to latest tag; the 8.1.x branch is no longer published)
           - php-version: '7.2'
-            prestashop-version: '8.1.x'
+            prestashop-version: '8.1.7'
             node-version: '14'
           - php-version: '8.1'
-            prestashop-version: '8.1.x'
+            prestashop-version: '8.1.7'
             node-version: '14'
-          # PrestaShop v8.2.x
+          # PrestaShop 8.2 (pinned to latest tag)
           - php-version: '7.2'
-            prestashop-version: '8.2.x'
+            prestashop-version: '8.2.7'
             node-version: '14'
           - php-version: '8.1'
-            prestashop-version: '8.2.x'
+            prestashop-version: '8.2.7'
             node-version: '14'
-          # PrestaShop v9.0.x
+          # PrestaShop 9.0 (pinned to latest tag; the 9.0.x branch is no longer published)
           - php-version: '8.1'
-            prestashop-version: '9.0.x'
+            prestashop-version: '9.0.3'
             node-version: '20'
           - php-version: '8.4'
-            prestashop-version: '9.0.x'
+            prestashop-version: '9.0.3'
             node-version: '20'
 
     services:
@@ -199,7 +199,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor2/PrestaShop
-          key: prestashop-${{ matrix.prestashop-version }}
+          # -v2: evict caches poisoned by the previously broken Cleanup step,
+          # which left a compiled DI container in var/cache and broke module
+          # installs on restore (e.g. PrestaShop 9.0 distributionapiclient service).
+          key: prestashop-${{ matrix.prestashop-version }}-v2
 
       - name: Download PrestaShop
         run: bash .github/scripts/download-prestashop.sh
@@ -234,7 +237,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run:
+        run: |
           php vendor2/PrestaShop/bin/console prestashop:module uninstall miguel || true
           rm -rf vendor2/PrestaShop/modules/miguel
           rm -rf vendor2/PrestaShop/var/cache
