@@ -50,6 +50,20 @@ class PrestashopDetailsTest extends DatabaseTestCase
         }
     }
 
+    public function testEndpointsAreRelativeToBaseUri()
+    {
+        $module = new Miguel();
+
+        $details = $module->getPrestashopDetails();
+
+        // The links carry no scheme/host (that is reported separately in baseUrl)
+        // and are relative to baseUri.
+        foreach ($details['endpoints'] as $url) {
+            $this->assertStringNotContainsString('://', $url);
+            $this->assertStringStartsWith($details['baseUri'], $url);
+        }
+    }
+
     public function testKeepsLegacyBaseFields()
     {
         $module = new Miguel();

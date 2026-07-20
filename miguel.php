@@ -638,7 +638,8 @@ class Miguel extends Module
         // Always use the index.php dispatch form (not getModuleLink, which returns the
         // friendly /module/miguel/api URL when rewriting is on) so the endpoints work
         // regardless of the shop's URL-rewriting / friendly-URL configuration.
-        $endpointBase = $ps['baseUrl'] . $ps['baseUri'] . 'index.php?fc=module&module=miguel&controller=api&resource=';
+        // The links are relative to baseUri — the scheme/host is already in baseUrl.
+        $endpointBase = $ps['baseUri'] . 'index.php?fc=module&module=miguel&controller=api&resource=';
         $ps['endpoints'] = [
             'orders' => $endpointBase . 'orders',
             'order' => $endpointBase . 'order',
