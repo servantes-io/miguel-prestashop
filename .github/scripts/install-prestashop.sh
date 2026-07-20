@@ -51,5 +51,21 @@ pushd vendor2/PrestaShop > /dev/null
     # create test db
     composer run-script create-test-db
 
+    # Warm the Symfony DI container before any module is installed.
+    #
+    # On a cache hit the "Download PrestaShop" step is skipped, so the container
+    # is never pre-warmed by the clone/composer/asset build. The first *cold*
+    # container build then happens during `prestashop:module install`, and that
+    # cold build omits module service definitions -- so ps_distributionapiclient's
+    # actionBeforeInstallModule hook (which fires on every module install) dies
+    # with: You have requested a non-existent service
+    # "distributionapiclient.distribution_api" (PrestaShop 9.0).
+    #
+    # A prime build followed by a rebuild yields a complete container that
+    # includes every active module's services. Fresh (cache-miss) runs already
+    # get this for free via the download/build step.
+    php bin/console cache:clear
+    php bin/console cache:clear
+
     mkdir -p modules/miguel
 popd > /dev/null

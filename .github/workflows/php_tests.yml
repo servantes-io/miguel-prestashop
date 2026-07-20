@@ -199,9 +199,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor2/PrestaShop
-          # -v2: evict caches poisoned by the previously broken Cleanup step,
-          # which left a compiled DI container in var/cache and broke module
-          # installs on restore (e.g. PrestaShop 9.0 distributionapiclient service).
+          # On a cache hit the Download step is skipped, so PrestaShop's Symfony
+          # container is never pre-warmed; install-prestashop.sh warms it before
+          # module install so module services (e.g. the PrestaShop 9.0
+          # distributionapiclient.distribution_api used by ps_distributionapiclient's
+          # actionBeforeInstallModule hook) are compiled in.
           key: prestashop-${{ matrix.prestashop-version }}-v2
 
       - name: Download PrestaShop
