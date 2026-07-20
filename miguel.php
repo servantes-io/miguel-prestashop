@@ -84,6 +84,22 @@ class Miguel extends Module
         self::$sharedInstance = $instance;
     }
 
+    /**
+     * Public accessor for the module's Context.
+     *
+     * The base module context property is protected, so the procedural
+     * entry-point shims (products.php, orders.php, order-state-callback.php)
+     * cannot read it directly. Exposing it here lets those scripts reuse the
+     * context the module already holds instead of reaching for the global
+     * context singleton.
+     *
+     * @return Context
+     */
+    public function getContext()
+    {
+        return $this->context;
+    }
+
     public function install()
     {
         MiguelSettings::reset();
@@ -626,7 +642,7 @@ class Miguel extends Module
     public function getAllProducts()
     {
         try {
-            $context = Context::getContext();
+            $context = $this->context;
 
             $id_shop = (int) Configuration::get('PS_SHOP_DEFAULT');
             $id_lang = (int) Configuration::get('PS_LANG_DEFAULT');
@@ -641,10 +657,10 @@ class Miguel extends Module
 
             $currencyIso = $context->currency->iso_code;
 
-            if (!isset($context->cart) || !$context->cart->id) {
+            if (empty($context->cart->id)) {
                 $context->cart = new Cart();
             }
-            if (!isset($context->customer) || !$context->customer->id) {
+            if (empty($context->customer->id)) {
                 $context->customer = new Customer();
             }
 

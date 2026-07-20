@@ -110,7 +110,7 @@ class ContextMocker
         LegacyContext::setInstanceForTesting($context);
         Module::setContextInstanceForTesting($context);
         $context->shop = new Shop((int) Configuration::get('PS_SHOP_DEFAULT'));
-        Shop::setContext(Shop::CONTEXT_SHOP, (int) Context::getContext()->shop->id);
+        Shop::setContext(Shop::CONTEXT_SHOP, (int) $context->shop->id);
         // $context->customer = Phake::mock('Customer');
         // Phake::when($context->customer)->getGroups()->thenReturn(array());
         // $context->cookie   = Phake::mock('Cookie');
@@ -136,7 +136,7 @@ class ContextMocker
     {
         Context::setInstanceForTesting($this->contextBackup);
         LegacyContext::setInstanceForTesting($this->contextBackup);
-        Shop::setContext(Shop::CONTEXT_SHOP, (int) Context::getContext()->shop->id);
+        Shop::setContext(Shop::CONTEXT_SHOP, (int) $this->contextBackup->shop->id);
         Module::setContextInstanceForTesting($this->contextBackup);
     }
 }
