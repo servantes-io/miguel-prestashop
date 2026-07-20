@@ -462,6 +462,9 @@ class Miguel extends Module
             'address' => MiguelApiCreateOrderRequest::composeAddress($address_invoice),
             'lang' => $language->iso_code,
         ];
+        $body_orders['billing_address'] = MiguelApiCreateOrderRequest::structureAddress($address_invoice);
+        $address_delivery = new Address((int) $order->id_address_delivery);
+        $body_orders['shipping_address'] = MiguelApiCreateOrderRequest::structureAddress($address_delivery);
         $body_orders['purchase_date'] = date(DATE_ISO8601, strtotime($order->date_add));
         if (isset($params['getUpdatedOrders'])) {
             $body_orders['update_date'] = date(DATE_ISO8601, strtotime($order->date_upd)); // aktuální datum tam je až po provedení funkce

@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use Address;
 use Miguel;
+use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Product;
 use Tests\Unit\Utility\DatabaseTestCase;
 
@@ -55,5 +57,32 @@ class OrderDetailArrayTest extends DatabaseTestCase
 
         $this->assertIsArray($result);
         $this->assertSame((int) $order->id, $result['id']);
+    }
+
+    public function testStructureAddressReturnsNullForUnloadableAddress()
+    {
+        $this->assertNull(MiguelApiCreateOrderRequest::structureAddress(null));
+        $this->assertNull(MiguelApiCreateOrderRequest::structureAddress(new Address(0)));
+    }
+
+    public function testStructureAddressReturnsExpectedKeys()
+    {
+        $structured = MiguelApiCreateOrderRequest::structureAddress(new Address(1));
+
+        $this->assertIsArray($structured);
+        foreach (['full_name', 'company', 'address1', 'address2', 'city', 'state', 'zip', 'country', 'phone'] as $key) {
+            $this->assertArrayHasKey($key, $structured);
+        }
+    }
+
+    public function testOrderCarriesStructuredAddresses()
+    {
+        list($order) = $this->buildOrder('ADDRTEST', '9788024271101');
+
+        $result = (new Miguel())->createOrderDetailArray(['id_order' => $order->id]);
+
+        $this->assertIsArray($result['billing_address']);
+        // Fixture sets id_address_delivery = 1, so shipping is present too.
+        $this->assertIsArray($result['shipping_address']);
     }
 }
