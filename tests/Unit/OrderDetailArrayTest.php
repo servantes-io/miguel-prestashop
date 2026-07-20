@@ -61,6 +61,16 @@ class OrderDetailArrayTest extends DatabaseTestCase
         $this->assertSame((int) $order->id, $result['id']);
     }
 
+    public function testOrderCarriesCreatedDate()
+    {
+        list($order) = $this->buildOrder('CREATEDTEST', '9788024271101');
+
+        $result = (new Miguel())->createOrderDetailArray(['id_order' => $order->id]);
+
+        $this->assertIsArray($result);
+        $this->assertSame(date(DATE_ISO8601, strtotime($order->date_add)), $result['created_date']);
+    }
+
     public function testStructureAddressReturnsNullForUnloadableAddress()
     {
         $this->assertNull(MiguelApiCreateOrderRequest::structureAddress(null));

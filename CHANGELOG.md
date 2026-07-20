@@ -11,6 +11,7 @@ Added:
 - Order payloads now include the PrestaShop order `id`.
 - Order payloads now include structured `billing_address` and `shipping_address` objects (full name, company, street, city, state, zip, country code, phone).
 - Order product lines now include `quantity`.
+- Order payloads now include `created_date` (the order creation date, PrestaShop `date_add`).
 
 Changed:
 
