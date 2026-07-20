@@ -7,6 +7,10 @@ Added:
 - Native PrestaShop API endpoint via a module front controller (`index.php?fc=module&module=miguel&controller=api&resource=…`), routed through the shop's `index.php` so it is no longer blocked by Cloudflare/Apache rules against direct PHP access in `/modules/`.
 - The module now reports its endpoint URLs to Miguel on connect (`endpoints` in the connect payload).
 - Fallback API-token transport via the `X-Miguel-Token` header for environments that strip `Authorization`.
+- New `order` API resource: fetch a single order by its reference (`resource=order&code=…`), returning the order or an `order.not_found` error. Front-controller only.
+- Order payloads now include the PrestaShop order `id`.
+- Order payloads now include structured `billing_address` and `shipping_address` objects (full name, company, street, city, state, zip, country code, phone).
+- Order product lines now include `quantity`.
 
 Changed:
 
