@@ -772,6 +772,34 @@ class Miguel extends Module
         return $updated_orders;
     }
 
+    /**
+     * Return the newest order (by id) matching a reference that still has Miguel
+     * products, or false when none match / none have Miguel products.
+     *
+     * @param string $code order reference
+     *
+     * @return array<string,mixed>|false
+     */
+    public function getOrderByCode($code)
+    {
+        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `reference` = "' . pSQL($code) . '" ORDER BY `id_order` DESC';
+        $db = Db::getInstance(false);
+        $result = $db->executeS($request);
+
+        if (false == $result) {
+            return false;
+        }
+
+        foreach ($result as $row) {
+            $order_data = $this->createOrderDetailArray(['id_order' => $row['id_order'], 'getUpdatedOrders' => true]);
+            if ($order_data) {
+                return $order_data;
+            }
+        }
+
+        return false;
+    }
+
     public function logData($data)
     {
         $this->_logger->logDebug($data);
