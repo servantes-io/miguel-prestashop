@@ -101,4 +101,44 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertSame('payload.invalid', $response->getData()->getCode());
         $this->assertSame('Invalid payload: code not set', $response->getData()->getMessage());
     }
+
+    public function testOrderWithoutCodeReturnsArgumentNotSet()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order', 'GET', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('argument.not_set', $response->getData()->getCode());
+    }
+
+    public function testOrderWrongMethodReturnsMethodNotAllowed()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order', 'POST', ['code' => 'X'], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('method.not_allowed', $response->getData()->getCode());
+    }
+
+    public function testOrderUnknownCodeReturnsOrderNotFound()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order', 'GET', ['code' => 'NOSUCHCODE'], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('order.not_found', $response->getData()->getCode());
+    }
+
+    public function testConnectPayloadReportsOrderEndpoint()
+    {
+        $details = (new Miguel())->getPrestashopDetails();
+
+        $this->assertArrayHasKey('order', $details['endpoints']);
+        // getModuleLink orders query params differently across PrestaShop versions,
+        // so assert the resource param is present rather than at a fixed position.
+        $this->assertStringContainsString('resource=order', $details['endpoints']['order']);
+    }
 }

@@ -116,6 +116,11 @@ class MiguelApiError implements \JsonSerializable
         return new self('resource.not_found', "Resource $resource not found");
     }
 
+    public static function orderNotFound($code): MiguelApiError
+    {
+        return new self('order.not_found', "Order $code not found");
+    }
+
     public static function methodNotAllowed($method): MiguelApiError
     {
         return new self('method.not_allowed', "Method $method not allowed");

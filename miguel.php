@@ -453,6 +453,7 @@ class Miguel extends Module
         }
 
         $body_orders = [];
+        $body_orders['id'] = (int) $order->id;
         $body_orders['code'] = $order->reference;
         $body_orders['user'] = [
             'id' => (string) $order->id_customer,
@@ -461,6 +462,10 @@ class Miguel extends Module
             'address' => MiguelApiCreateOrderRequest::composeAddress($address_invoice),
             'lang' => $language->iso_code,
         ];
+        $body_orders['billing_address'] = MiguelApiCreateOrderRequest::structureAddress($address_invoice);
+        $address_delivery = new Address((int) $order->id_address_delivery);
+        $body_orders['shipping_address'] = MiguelApiCreateOrderRequest::structureAddress($address_delivery);
+        $body_orders['created_date'] = date(DATE_ISO8601, strtotime($order->date_add));
         $body_orders['purchase_date'] = date(DATE_ISO8601, strtotime($order->date_add));
         if (isset($params['getUpdatedOrders'])) {
             $body_orders['update_date'] = date(DATE_ISO8601, strtotime($order->date_upd)); // aktuální datum tam je až po provedení funkce
@@ -632,6 +637,7 @@ class Miguel extends Module
         $ps['baseUri'] = __PS_BASE_URI__;
         $ps['endpoints'] = [
             'orders' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'orders'], true),
+            'order' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order'], true),
             'products' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'products'], true),
             'orderStateCallback' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order-state-callback'], true),
         ];
@@ -766,6 +772,34 @@ class Miguel extends Module
         }
 
         return $updated_orders;
+    }
+
+    /**
+     * Return the newest order (by id) matching a reference that still has Miguel
+     * products, or false when none match / none have Miguel products.
+     *
+     * @param string $code order reference
+     *
+     * @return array<string,mixed>|false
+     */
+    public function getOrderByCode($code)
+    {
+        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `reference` = "' . pSQL($code) . '" ORDER BY `id_order` DESC';
+        $db = Db::getInstance(false);
+        $result = $db->executeS($request);
+
+        if (false == $result) {
+            return false;
+        }
+
+        foreach ($result as $row) {
+            $order_data = $this->createOrderDetailArray(['id_order' => $row['id_order'], 'getUpdatedOrders' => true]);
+            if ($order_data) {
+                return $order_data;
+            }
+        }
+
+        return false;
     }
 
     public function logData($data)

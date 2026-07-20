@@ -44,6 +44,61 @@ class MiguelApiCreateOrderRequest
     }
 
     /**
+     * Build a structured address array from a PrestaShop Address, or null.
+     *
+     * @param \Address|null $address
+     *
+     * @return array<string,string|null>|null
+     */
+    public static function structureAddress(?\Address $address)
+    {
+        if (null === $address || false == \Validate::isLoadedObject($address)) {
+            return null;
+        }
+
+        $country = new \Country((int) $address->id_country);
+        $country_iso = \Validate::isLoadedObject($country) ? $country->iso_code : null;
+
+        $state_name = null;
+        if ((int) $address->id_state > 0) {
+            $state = new \State((int) $address->id_state);
+            if (\Validate::isLoadedObject($state)) {
+                $state_name = $state->name;
+            }
+        }
+
+        $full_name = trim($address->firstname . ' ' . $address->lastname);
+        $phone = strlen((string) $address->phone) > 0 ? $address->phone : $address->phone_mobile;
+
+        return [
+            'full_name' => self::emptyToNull($full_name),
+            'company' => self::emptyToNull($address->company),
+            'address1' => self::emptyToNull($address->address1),
+            'address2' => self::emptyToNull($address->address2),
+            'city' => self::emptyToNull($address->city),
+            'state' => self::emptyToNull($state_name),
+            'zip' => self::emptyToNull($address->postcode),
+            'country' => self::emptyToNull($country_iso),
+            'phone' => self::emptyToNull($phone),
+        ];
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return string|null
+     */
+    private static function emptyToNull($value)
+    {
+        if (null === $value) {
+            return null;
+        }
+        $value = (string) $value;
+
+        return '' === $value ? null : $value;
+    }
+
+    /**
      * Create an array of products from order detail
      *
      * @param array $order_detail Order detail array
@@ -112,7 +167,8 @@ class MiguelApiCreateOrderRequest
                         $items[] = new MiguelApiCreateOrderItem(
                             $item_data['product']->reference,
                             $pack_item_original_price,
-                            $pack_item_unit_price
+                            $pack_item_unit_price,
+                            (int) $product['product_quantity']
                         );
                     }
                 }
@@ -152,7 +208,8 @@ class MiguelApiCreateOrderRequest
         return new MiguelApiCreateOrderItem(
             $product['product_reference'],
             $product['original_product_price'],
-            $product['unit_price_tax_excl']
+            $product['unit_price_tax_excl'],
+            (int) $product['product_quantity']
         );
     }
 

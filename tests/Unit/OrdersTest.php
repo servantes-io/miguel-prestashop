@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use Miguel;
 use Miguel\Utils\MiguelSettings;
-use Order;
 use Product;
 use Tests\Unit\Utility\DatabaseTestCase;
 
@@ -108,10 +107,8 @@ class OrdersTest extends DatabaseTestCase
         MiguelSettings::setEnabled(true);
         MiguelSettings::save(MiguelSettings::API_TOKEN_PRODUCTION_KEY, '1234');
 
-        $existing_orders = Order::getOrdersWithInformations();
-
         $order = $this->entityCreator->createOrder();
-        $order->reference = '1234';
+        $order->reference = 'EMPTYREFONLY';
         $order->save();
 
         $product = new Product();
@@ -126,9 +123,12 @@ class OrdersTest extends DatabaseTestCase
         $output = $this->sut();
 
         // ASSERT
+        // An order whose only product has an empty reference must be excluded from the
+        // API output. Assert by code (not by a cross-test order count, which is fragile
+        // in the shared, non-transactional test DB).
         $json = json_decode($output, true);
         $this->assertIsArray($json['orders']);
-        $this->assertCount(count($existing_orders), $json['orders']); // no new order should be returned
+        $this->assertNotContains('EMPTYREFONLY', array_column($json['orders'], 'code'));
     }
 
     private function sut(): string

@@ -22,4 +22,12 @@ class ApiErrorTest extends TestCase
         $this->assertSame('method.not_allowed', $error->getCode());
         $this->assertSame('Method DELETE not allowed', $error->getMessage());
     }
+
+    public function testOrderNotFound()
+    {
+        $error = MiguelApiError::orderNotFound('XKBKNABJK');
+
+        $this->assertSame('order.not_found', $error->getCode());
+        $this->assertSame('Order XKBKNABJK not found', $error->getMessage());
+    }
 }
