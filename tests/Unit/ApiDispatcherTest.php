@@ -137,6 +137,8 @@ class ApiDispatcherTest extends DatabaseTestCase
         $details = (new Miguel())->getPrestashopDetails();
 
         $this->assertArrayHasKey('order', $details['endpoints']);
-        $this->assertStringEndsWith('resource=order', $details['endpoints']['order']);
+        // getModuleLink orders query params differently across PrestaShop versions,
+        // so assert the resource param is present rather than at a fixed position.
+        $this->assertStringContainsString('resource=order', $details['endpoints']['order']);
     }
 }
