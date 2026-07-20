@@ -15,19 +15,11 @@
 
 namespace Tests\Unit\Utility;
 
-use Context;
 use Order;
 use OrderDetail;
 
 class EntityCreator
 {
-    private $context;
-
-    public function __construct()
-    {
-        $this->context = Context::getContext();
-    }
-
     /**
      * Creates a new order (not saved in the database)
      *

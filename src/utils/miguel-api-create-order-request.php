@@ -60,7 +60,7 @@ class MiguelApiCreateOrderRequest
 
             if (\Pack::isPack($product_id)) {
                 // Get pack items and add them individually
-                $pack_items = \Pack::getItems($product_id, (int) \Context::getContext()->language->id);
+                $pack_items = \Pack::getItems($product_id, (int) $order->id_lang);
 
                 if (empty($pack_items)) {
                     $product_array = self::createArrayFromSimpleProduct($product);
@@ -77,7 +77,7 @@ class MiguelApiCreateOrderRequest
                 $valid_pack_items = [];
 
                 foreach ($pack_items as $pack_item) {
-                    $pack_product = new \Product($pack_item->id, false, (int) \Context::getContext()->language->id);
+                    $pack_product = new \Product($pack_item->id, false, (int) $order->id_lang);
 
                     if (\Validate::isLoadedObject($pack_product) && !empty($pack_product->reference)) {
                         $individual_price = (float) \Product::getPriceStatic($pack_product->id, false, null, 6, null, false, true, 1, false, $order->id_customer, $order->id_cart);
