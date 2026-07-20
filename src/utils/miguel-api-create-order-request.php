@@ -112,7 +112,8 @@ class MiguelApiCreateOrderRequest
                         $items[] = new MiguelApiCreateOrderItem(
                             $item_data['product']->reference,
                             $pack_item_original_price,
-                            $pack_item_unit_price
+                            $pack_item_unit_price,
+                            (int) $product['product_quantity']
                         );
                     }
                 }
@@ -152,7 +153,8 @@ class MiguelApiCreateOrderRequest
         return new MiguelApiCreateOrderItem(
             $product['product_reference'],
             $product['original_product_price'],
-            $product['unit_price_tax_excl']
+            $product['unit_price_tax_excl'],
+            (int) $product['product_quantity']
         );
     }
 

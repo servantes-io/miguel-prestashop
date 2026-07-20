@@ -24,6 +24,7 @@ class MiguelApiCreateOrderItem implements \JsonSerializable
     private $code;
     private $regular_price;
     private $sold_price;
+    private $quantity;
 
     /**
      * Constructor
@@ -31,12 +32,14 @@ class MiguelApiCreateOrderItem implements \JsonSerializable
      * @param string $code Product code
      * @param float $regular_price Regular price without VAT
      * @param float $sold_price Sold price without VAT
+     * @param int $quantity Number of units ordered for this line
      */
-    public function __construct(string $code, float $regular_price, float $sold_price)
+    public function __construct(string $code, float $regular_price, float $sold_price, int $quantity)
     {
         $this->code = $code;
         $this->regular_price = $regular_price;
         $this->sold_price = $sold_price;
+        $this->quantity = $quantity;
     }
 
     #[\ReturnTypeWillChange]
@@ -44,6 +47,7 @@ class MiguelApiCreateOrderItem implements \JsonSerializable
     {
         return [
             'code' => $this->code,
+            'quantity' => $this->quantity,
             'price' => [
                 'regular_without_vat' => $this->regular_price,
                 'sold_without_vat' => $this->sold_price,
@@ -79,5 +83,15 @@ class MiguelApiCreateOrderItem implements \JsonSerializable
     public function getSoldPrice()
     {
         return $this->sold_price;
+    }
+
+    /**
+     * Get the ordered quantity
+     *
+     * @return int Quantity
+     */
+    public function getQuantity()
+    {
+        return $this->quantity;
     }
 }
