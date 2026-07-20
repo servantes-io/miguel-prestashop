@@ -189,7 +189,7 @@ jobs:
           extensions: gd, mbstring, zip, mcrypt, pdo_mysql, dom
 
       - name: Test MySQL Connection
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_seconds: 10
           max_attempts: 3
