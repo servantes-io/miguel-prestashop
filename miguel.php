@@ -635,11 +635,16 @@ class Miguel extends Module
         $ps['moduleVersion'] = $this->version;
         $ps['baseUrl'] = Tools::getShopDomainSsl(true);
         $ps['baseUri'] = __PS_BASE_URI__;
+        // Always use the index.php dispatch form (not getModuleLink, which returns the
+        // friendly /module/miguel/api URL when rewriting is on) so the endpoints work
+        // regardless of the shop's URL-rewriting / friendly-URL configuration.
+        // The links are relative to baseUri — the scheme/host is already in baseUrl.
+        $endpointBase = $ps['baseUri'] . 'index.php?fc=module&module=miguel&controller=api&resource=';
         $ps['endpoints'] = [
-            'orders' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'orders'], true),
-            'order' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order'], true),
-            'products' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'products'], true),
-            'orderStateCallback' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order-state-callback'], true),
+            'orders' => $endpointBase . 'orders',
+            'order' => $endpointBase . 'order',
+            'products' => $endpointBase . 'products',
+            'orderStateCallback' => $endpointBase . 'order-state-callback',
         ];
 
         return $ps;

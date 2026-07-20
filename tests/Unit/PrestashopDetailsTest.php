@@ -36,6 +36,40 @@ class PrestashopDetailsTest extends DatabaseTestCase
         $this->assertStringContainsString('resource=order-state-callback', $details['endpoints']['orderStateCallback']);
     }
 
+    public function testEndpointsUseIndexPhpDispatchForm()
+    {
+        $module = new Miguel();
+
+        $details = $module->getPrestashopDetails();
+
+        // Must always be the index.php dispatch form (works regardless of URL rewriting),
+        // never the friendly /module/miguel/api form.
+        foreach ($details['endpoints'] as $url) {
+            $this->assertStringContainsString('index.php?fc=module&module=miguel&controller=api&resource=', $url);
+            $this->assertStringNotContainsString('/module/miguel/api', $url);
+        }
+    }
+
+    public function testEndpointsAreRelativeToBaseUri()
+    {
+        $module = new Miguel();
+
+        $details = $module->getPrestashopDetails();
+
+        // The links are exactly baseUri + the dispatch query, carrying no
+        // scheme/host (that is reported separately in baseUrl). Asserting the exact
+        // value is empty-safe — baseUri may be an empty string in some contexts.
+        $base = $details['baseUri'] . 'index.php?fc=module&module=miguel&controller=api&resource=';
+        $this->assertSame($base . 'orders', $details['endpoints']['orders']);
+        $this->assertSame($base . 'order', $details['endpoints']['order']);
+        $this->assertSame($base . 'products', $details['endpoints']['products']);
+        $this->assertSame($base . 'order-state-callback', $details['endpoints']['orderStateCallback']);
+
+        foreach ($details['endpoints'] as $url) {
+            $this->assertStringNotContainsString('://', $url);
+        }
+    }
+
     public function testKeepsLegacyBaseFields()
     {
         $module = new Miguel();
