@@ -56,11 +56,17 @@ class PrestashopDetailsTest extends DatabaseTestCase
 
         $details = $module->getPrestashopDetails();
 
-        // The links carry no scheme/host (that is reported separately in baseUrl)
-        // and are relative to baseUri.
+        // The links are exactly baseUri + the dispatch query, carrying no
+        // scheme/host (that is reported separately in baseUrl). Asserting the exact
+        // value is empty-safe — baseUri may be an empty string in some contexts.
+        $base = $details['baseUri'] . 'index.php?fc=module&module=miguel&controller=api&resource=';
+        $this->assertSame($base . 'orders', $details['endpoints']['orders']);
+        $this->assertSame($base . 'order', $details['endpoints']['order']);
+        $this->assertSame($base . 'products', $details['endpoints']['products']);
+        $this->assertSame($base . 'order-state-callback', $details['endpoints']['orderStateCallback']);
+
         foreach ($details['endpoints'] as $url) {
             $this->assertStringNotContainsString('://', $url);
-            $this->assertStringStartsWith($details['baseUri'], $url);
         }
     }
 
