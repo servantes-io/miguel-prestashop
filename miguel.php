@@ -453,6 +453,7 @@ class Miguel extends Module
         }
 
         $body_orders = [];
+        $body_orders['id'] = (int) $order->id;
         $body_orders['code'] = $order->reference;
         $body_orders['user'] = [
             'id' => (string) $order->id_customer,

@@ -46,4 +46,14 @@ class OrderDetailArrayTest extends DatabaseTestCase
         $this->assertIsArray($result);
         $this->assertSame(4, $result['products'][0]['quantity']);
     }
+
+    public function testOrderCarriesIntegerId()
+    {
+        list($order) = $this->buildOrder('IDTEST', '9788024271101');
+
+        $result = (new Miguel())->createOrderDetailArray(['id_order' => $order->id]);
+
+        $this->assertIsArray($result);
+        $this->assertSame((int) $order->id, $result['id']);
+    }
 }
