@@ -7,8 +7,8 @@ info:
     url: https://github.com/servantes-io/miguel-prestashop/blob/main/LICENSE.txt
   description: >
     HTTP API exposed by the Miguel PrestaShop module for the Miguel backend.
-    Three endpoints: list updated orders, list products, and a callback that
-    switches a PrestaShop order status.
+    Four endpoints: list updated orders, fetch a single order by its code, list
+    products, and a callback that switches a PrestaShop order status.
 
 
     ## Routing & URLs
@@ -31,13 +31,14 @@ info:
       `.../order-state-callback.php`.
 
 
-    The `{resource}` values are `orders`, `products`, and `order-state-callback`.
-    The paths in this document use the direct-access form because an OpenAPI path
-    cannot contain a query string; the contract is identical for the recommended
-    front-controller URL. The module reports the exact per-resource
-    front-controller URLs to the Miguel backend in the `endpoints` object of the
-    `/v2/eshop/prestashop/connect` payload (`endpoints.orders`,
-    `endpoints.products`, `endpoints.orderStateCallback`).
+    The `{resource}` values are `orders`, `order`, `products`, and
+    `order-state-callback`. The paths in this document use the direct-access form
+    because an OpenAPI path cannot contain a query string; the contract is
+    identical for the recommended front-controller URL. The module reports the
+    exact per-resource front-controller URLs to the Miguel backend in the
+    `endpoints` object of the `/v2/eshop/prestashop/connect` payload
+    (`endpoints.orders`, `endpoints.order`, `endpoints.products`,
+    `endpoints.orderStateCallback`).
 
 
     ## Response contract
@@ -490,19 +491,41 @@ paths:
                     result: true
                     debug: ""
                     orders:
-                      - code: XKBKNABJK
+                      - id: 5002
+                        code: XKBKNABJK
                         user:
                           id: "42"
                           full_name: Jan Novák
                           email: jan@example.com
                           address: "Jan Novák, Václavské náměstí 1, 11000, Praha, CZ"
                           lang: cs
+                        billing_address:
+                          full_name: Jan Novák
+                          company: null
+                          address1: Václavské náměstí 1
+                          address2: null
+                          city: Praha
+                          state: null
+                          zip: "11000"
+                          country: CZ
+                          phone: "+420123456789"
+                        shipping_address:
+                          full_name: Jan Novák
+                          company: null
+                          address1: Václavské náměstí 1
+                          address2: null
+                          city: Praha
+                          state: null
+                          zip: "11000"
+                          country: CZ
+                          phone: "+420123456789"
                         purchase_date: "2024-01-15T10:30:00+0000"
                         update_date: "2024-01-16T08:05:00+0000"
                         paid: true
                         currency_code: CZK
                         products:
                           - code: "9788024271101"
+                            quantity: 2
                             price:
                               regular_without_vat: 199.0
                               sold_without_vat: 149.0
