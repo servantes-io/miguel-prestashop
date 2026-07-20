@@ -36,6 +36,20 @@ class PrestashopDetailsTest extends DatabaseTestCase
         $this->assertStringContainsString('resource=order-state-callback', $details['endpoints']['orderStateCallback']);
     }
 
+    public function testEndpointsUseIndexPhpDispatchForm()
+    {
+        $module = new Miguel();
+
+        $details = $module->getPrestashopDetails();
+
+        // Must always be the index.php dispatch form (works regardless of URL rewriting),
+        // never the friendly /module/miguel/api form.
+        foreach ($details['endpoints'] as $url) {
+            $this->assertStringContainsString('index.php?fc=module&module=miguel&controller=api&resource=', $url);
+            $this->assertStringNotContainsString('/module/miguel/api', $url);
+        }
+    }
+
     public function testKeepsLegacyBaseFields()
     {
         $module = new Miguel();
