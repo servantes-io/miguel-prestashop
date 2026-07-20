@@ -636,6 +636,7 @@ class Miguel extends Module
         $ps['baseUri'] = __PS_BASE_URI__;
         $ps['endpoints'] = [
             'orders' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'orders'], true),
+            'order' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order'], true),
             'products' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'products'], true),
             'orderStateCallback' => $this->context->link->getModuleLink('miguel', 'api', ['resource' => 'order-state-callback'], true),
         ];
