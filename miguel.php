@@ -1017,7 +1017,8 @@ class Miguel extends Module
     {
         $orders = [];
         $page = 1;
-        do {
+        $maxPages = 1000;
+        for ($i = 0; $i < $maxPages && null !== $page; ++$i) {
             $uri = '/v2/orders?userEmail=' . rawurlencode($user_email) . '&limit=100&page=' . $page;
             $json = $this->curlGet($uri);
             if (false === $json) {
@@ -1028,8 +1029,13 @@ class Miguel extends Module
                 return $page === 1 ? false : $orders;
             }
             $orders += MiguelApiV2OrderMapper::indexByCode($decoded);
-            $page = MiguelApiV2OrderMapper::nextPage($decoded);
-        } while (null !== $page);
+            $next = MiguelApiV2OrderMapper::nextPage($decoded);
+            // Guard against a non-advancing cursor (backend bug) that would loop forever.
+            if (null !== $next && $next <= $page) {
+                break;
+            }
+            $page = $next;
+        }
 
         return $orders;
     }
