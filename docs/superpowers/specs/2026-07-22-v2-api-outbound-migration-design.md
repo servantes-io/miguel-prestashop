@@ -22,7 +22,7 @@ added in this work.
 ## Goals
 
 - `POST /v2/orders` replaces `POST /v1/orders` for order sync.
-- `GET /v2/orders?userEmail=` + `GET /v2/orders/{code}` replace
+- `GET /v2/orders?userEmail=` (paginated) replaces
   `GET /v1/orders?user_email=` for the purchased-books page.
 - The V2 request/response shapes are isolated in dedicated, unit-tested mapper
   classes.
@@ -59,9 +59,9 @@ New files under `src/utils/`:
 - `miguel-api-v2-order-request.php` — `MiguelApiV2OrderRequest`: maps a PrestaShop
   `Order` (+ its resolved `Customer`, `Currency`, `Address`, `Language`,
   `OrderDetail` list) into the V2 `OrderCreate` array for `POST /v2/orders`.
-- `miguel-api-v2-order-mapper.php` — `MiguelApiV2OrderMapper`: maps V2
-  `GET /v2/orders` (list) and `GET /v2/orders/{code}` (detail) responses into the
-  internal purchased-page array structure that `purchased.tpl` consumes.
+- `miguel-api-v2-order-mapper.php` — `MiguelApiV2OrderMapper`: maps the V2
+  `GET /v2/orders` (paginated list) response into the internal purchased-page
+  array structure that `purchased.tpl` consumes.
 
 Reused as-is:
 
@@ -83,8 +83,8 @@ Changed call sites in `miguel.php`:
 - `hookActionOrderStatusUpdate()` — build the body with `MiguelApiV2OrderRequest`
   and `POST` it to `/v2/orders` instead of `/v1/orders`.
 - `getOrderedBooks()` — replace the single `GET /v1/orders?user_email=` with the
-  list-then-detail flow (below), mapping the result through
-  `MiguelApiV2OrderMapper`.
+  paginated `GET /v2/orders?userEmail=` read flow (below), mapping the result
+  through `MiguelApiV2OrderMapper`.
 
 ## Outbound: `POST /v2/orders` (`OrderCreate`)
 
@@ -123,36 +123,39 @@ Dates are formatted as ISO 8601 (`DATE_ISO8601`, matching the existing code).
 
 ## Outbound: purchased-books read flow
 
-`getOrderedBooks()` gains a list-then-detail flow. For the logged-in customer:
+As of the current v2 spec, the list item (`Interfaces.IOrderListItem`) carries
+`formats[]` (`Interfaces.IOrderItemFormat` = `{ format, downloadUrl }`), so the
+paginated list alone supplies everything the purchased page needs — no per-order
+detail call. `getOrderedBooks()` uses a single list read. For the logged-in
+customer:
 
-1. `GET /v2/orders?userEmail={email}&limit=100&page=N`, following
-   `meta.nextPage` until exhausted, to collect the set of order **codes** that
-   exist in Miguel for this e-mail. This bounds detail calls to real matches
-   (the list carries no download URLs, so it is used only to discover which
-   orders exist).
+1. `GET /v2/orders?userEmail={email}&limit=100&page=N`, following `meta.nextPage`
+   until exhausted, collecting the returned orders (`data[]`, each an `IOrder`)
+   keyed by `code`.
 2. Load the customer's PrestaShop orders (as today, via
    `Order::getCustomerOrders()`). For each PrestaShop order whose `reference`
-   is in the Miguel code set, `GET /v2/orders/{reference}` to fetch the
-   `OrderDetail`.
-3. `MiguelApiV2OrderMapper` turns each detail into purchased-page rows — one row
-   per detail `item` that has a linked Miguel product (`item.product !== null`),
+   matches a returned order `code`, map that order's `items[]`.
+3. `MiguelApiV2OrderMapper` turns a matched order into purchased-page rows — one
+   row per `item` that has a linked Miguel product (`item.product !== null`),
    mapped to the existing internal shape:
 
-   | Internal key (template) | V2 detail source |
+   | Internal key (template) | V2 list source |
    |---|---|
    | `id_order` | PrestaShop order `id_order` |
    | `reference` | PrestaShop order `reference` |
    | `date_add` | PrestaShop order `date_add`, formatted via `Tools::displayDate` (unchanged) |
    | `order_state` | PrestaShop order `order_state` (unchanged) |
-   | `paid` | `OrderDetail.paid` |
+   | `paid` | `IOrder.paid` |
    | `product.book.title` | `item.product.product.title` (`IProductVariantAlone.product.title`) |
    | `product.formats[]` | `item.formats[]` → `[{ format: fmt.format, download_url: fmt.downloadUrl }]` |
 
    The template's existing "books are being prepared" branch is reached naturally
-   when `formats` is empty (unpaid / not yet generated).
+   when `formats` is empty/null (unpaid / not yet generated).
 
 Because the mapper reproduces the exact array the template already reads,
-`purchased.tpl` is unchanged.
+`purchased.tpl` is unchanged. Should the backend ever move the download links
+back off the list item, the fallback is a per-order `GET /v2/orders/{code}`
+detail call — but that is not needed with the current spec.
 
 ## Error handling
 
@@ -162,10 +165,10 @@ Because the mapper reproduces the exact array the template already reads,
 - `POST /v2/orders` (the hook) is fire-and-forget, matching today: a `false`
   result is ignored (the hook returns `void`). Failures are logged via the
   existing `_logger` when `_LOGGER_` is defined.
-- Purchased page: any failed or empty list/detail response degrades to the
+- Purchased page: a failed or unparseable first list request degrades to the
   existing `['result' => false, 'debug' => ...]` outcome so the template shows
-  "no books" / "being prepared" rather than erroring. A `404` on a detail call
-  (order not in Miguel) is treated as "skip this order", not a hard failure.
+  "no books" rather than erroring. A PrestaShop order whose `reference` is not in
+  the returned list is simply not shown (it is not a Miguel order).
 
 ## Testing
 
@@ -181,9 +184,9 @@ New unit tests:
   empty-order guard, and that
   pack/duplicate handling still works (reuses `createProductsArray`).
 - `MiguelApiV2OrderMapperTest` — verifies list `{data, meta}` parsing +
-  `nextPage` pagination, code-set matching against PrestaShop references, and the
-  detail→internal-array mapping (title, formats→download_url, paid, empty-formats
-  path, skipping items with no linked product).
+  `nextPage` pagination, matching a returned order by `code`, and the
+  order→internal-array mapping (title, formats→download_url, paid, empty/null
+  formats path, skipping items with no linked product).
 
 Existing inbound tests (`OrdersTest`, `OrderDetailArrayTest`, `GetOrderByCodeTest`,
 `OrderResourceTest`, `ApiDispatcherTest`, …) must continue to pass **unchanged**,

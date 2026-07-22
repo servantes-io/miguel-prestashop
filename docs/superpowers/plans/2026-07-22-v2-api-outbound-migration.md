@@ -4,7 +4,7 @@
 
 **Goal:** Migrate the module's two outbound calls to Miguel — order sync and the purchased-books lookup — from the v1 order API to the v2 order API.
 
-**Architecture:** Two dedicated, self-contained V2 mapper classes under `src/utils/` isolate the v2 shape. `MiguelApiV2OrderRequest` builds the `OrderCreate` body for `POST /v2/orders`; `MiguelApiV2OrderMapper` turns `GET /v2/orders` (list) and `GET /v2/orders/{code}` (detail) responses into the internal array the purchased template already consumes. Two call sites in `miguel.php` are rewired; the inbound v1 API, `createOrderDetailArray()`, and `purchased.tpl` are untouched.
+**Architecture:** Two dedicated, self-contained V2 mapper classes under `src/utils/` isolate the v2 shape. `MiguelApiV2OrderRequest` builds the `OrderCreate` body for `POST /v2/orders`; `MiguelApiV2OrderMapper` turns the paginated `GET /v2/orders` list response into the internal array the purchased template already consumes (the list item now carries `formats[]` with download URLs, so no detail call is needed). Two call sites in `miguel.php` are rewired; the inbound v1 API, `createOrderDetailArray()`, and `purchased.tpl` are untouched.
 
 **Tech Stack:** PHP 7.1+ (tested on PHP 7.4), PrestaShop 1.7.8–9.0, PHPUnit (run in Docker via `make test-docker`), PHPStan level 5.
 
@@ -25,7 +25,7 @@
 
 New:
 - `src/utils/miguel-api-v2-order-request.php` — `MiguelApiV2OrderRequest`: `Order` → `OrderCreate` array (outbound POST body). Self-contained: loads the order's related entities and reuses the existing static helpers for products/addresses.
-- `src/utils/miguel-api-v2-order-mapper.php` — `MiguelApiV2OrderMapper`: pure functions mapping decoded v2 list/detail responses into purchased-page rows.
+- `src/utils/miguel-api-v2-order-mapper.php` — `MiguelApiV2OrderMapper`: pure functions mapping the decoded v2 list response (index by code, pagination, order→rows) into purchased-page rows.
 - `tests/Unit/MiguelApiV2OrderRequestTest.php` — DB-backed tests for the builder.
 - `tests/Unit/MiguelApiV2OrderMapperTest.php` — pure array-in/array-out tests for the mapper.
 
@@ -366,7 +366,9 @@ git commit -m "feat: sync orders to POST /v2/orders on status update"
 
 ---
 
-## Task 3: `MiguelApiV2OrderMapper` — list + detail response mappers
+## Task 3: `MiguelApiV2OrderMapper` — list response mapper
+
+The v2 list item (`Interfaces.IOrderListItem`) carries `formats[]` (`{ format, downloadUrl }`), so the paginated list alone supplies everything the purchased page needs. No detail endpoint is used.
 
 **Files:**
 - Create: `src/utils/miguel-api-v2-order-mapper.php`
@@ -375,9 +377,9 @@ git commit -m "feat: sync orders to POST /v2/orders on status update"
 **Interfaces:**
 - Consumes: nothing from the codebase — pure array transforms.
 - Produces:
-  - `MiguelApiV2OrderMapper::extractCodes(array $listResponse): string[]` — order codes from a decoded `GET /v2/orders` page (`data[].code`).
+  - `MiguelApiV2OrderMapper::indexByCode(array $listResponse): array<string,array>` — a decoded `GET /v2/orders` page's orders (`data[]`, each an `IOrder`) keyed by `code`.
   - `MiguelApiV2OrderMapper::nextPage(array $listResponse): ?int` — `meta.nextPage` (null when absent/last page).
-  - `MiguelApiV2OrderMapper::mapDetailToBooks(array $detail, array $orderMeta): array` — purchased-page rows from a decoded `GET /v2/orders/{code}` response. `$orderMeta` supplies the PrestaShop-side fields: `['id_order' => int, 'reference' => string, 'date_add' => string, 'order_state' => string]`. Consumed by Task 4.
+  - `MiguelApiV2OrderMapper::mapOrderToBooks(array $order, array $orderMeta): array` — purchased-page rows from one `IOrder`. `$orderMeta` supplies the PrestaShop-side fields: `['id_order' => int, 'reference' => string, 'date_add' => string, 'order_state' => string]`. Consumed by Task 4.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -393,16 +395,19 @@ use PHPUnit\Framework\TestCase;
 
 class MiguelApiV2OrderMapperTest extends TestCase
 {
-    public function testExtractCodesReadsDataCodes()
+    public function testIndexByCodeKeysOrdersByCode()
     {
-        $list = ['data' => [['code' => 'A'], ['code' => 'B']], 'meta' => []];
+        $list = ['data' => [['code' => 'A', 'paid' => true], ['code' => 'B', 'paid' => false]], 'meta' => []];
 
-        $this->assertSame(['A', 'B'], MiguelApiV2OrderMapper::extractCodes($list));
+        $index = MiguelApiV2OrderMapper::indexByCode($list);
+
+        $this->assertSame(['A', 'B'], array_keys($index));
+        $this->assertTrue($index['A']['paid']);
     }
 
-    public function testExtractCodesEmptyWhenNoData()
+    public function testIndexByCodeEmptyWhenNoData()
     {
-        $this->assertSame([], MiguelApiV2OrderMapper::extractCodes([]));
+        $this->assertSame([], MiguelApiV2OrderMapper::indexByCode([]));
     }
 
     public function testNextPageReadsMeta()
@@ -412,9 +417,10 @@ class MiguelApiV2OrderMapperTest extends TestCase
         $this->assertNull(MiguelApiV2OrderMapper::nextPage([]));
     }
 
-    public function testMapDetailToBooksBuildsTemplateRows()
+    public function testMapOrderToBooksBuildsTemplateRows()
     {
-        $detail = [
+        $order = [
+            'code' => 'REF7',
             'paid' => true,
             'items' => [
                 [
@@ -429,7 +435,7 @@ class MiguelApiV2OrderMapperTest extends TestCase
         ];
         $meta = ['id_order' => 7, 'reference' => 'REF7', 'date_add' => '2026-07-22', 'order_state' => 'Payment accepted'];
 
-        $rows = MiguelApiV2OrderMapper::mapDetailToBooks($detail, $meta);
+        $rows = MiguelApiV2OrderMapper::mapOrderToBooks($order, $meta);
 
         $this->assertCount(1, $rows);
         $row = $rows[0];
@@ -444,9 +450,10 @@ class MiguelApiV2OrderMapperTest extends TestCase
         $this->assertSame('https://x/pdf', $row['product']['formats'][1]['download_url']);
     }
 
-    public function testMapDetailSkipsItemsWithoutLinkedProduct()
+    public function testMapOrderSkipsItemsWithoutLinkedProduct()
     {
-        $detail = [
+        $order = [
+            'code' => 'R',
             'paid' => false,
             'items' => [
                 ['code' => 'NOPROD', 'product' => null, 'formats' => []],
@@ -455,15 +462,16 @@ class MiguelApiV2OrderMapperTest extends TestCase
         ];
         $meta = ['id_order' => 1, 'reference' => 'R', 'date_add' => 'd', 'order_state' => 's'];
 
-        $rows = MiguelApiV2OrderMapper::mapDetailToBooks($detail, $meta);
+        $rows = MiguelApiV2OrderMapper::mapOrderToBooks($order, $meta);
 
         $this->assertCount(1, $rows);
         $this->assertSame('Kept', $rows[0]['product']['book']['title']);
     }
 
-    public function testMapDetailEmptyFormatsYieldsPreparingRow()
+    public function testMapOrderNullFormatsYieldsPreparingRow()
     {
-        $detail = [
+        $order = [
+            'code' => 'R',
             'paid' => true,
             'items' => [
                 ['code' => 'BK3', 'product' => ['product' => ['title' => 'Preparing']], 'formats' => null],
@@ -471,7 +479,7 @@ class MiguelApiV2OrderMapperTest extends TestCase
         ];
         $meta = ['id_order' => 1, 'reference' => 'R', 'date_add' => 'd', 'order_state' => 's'];
 
-        $rows = MiguelApiV2OrderMapper::mapDetailToBooks($detail, $meta);
+        $rows = MiguelApiV2OrderMapper::mapOrderToBooks($order, $meta);
 
         $this->assertCount(1, $rows);
         $this->assertSame([], $rows[0]['product']['formats']);
@@ -511,31 +519,32 @@ if (!defined('_PS_VERSION_')) {
 }
 
 /**
- * Maps Miguel API v2 order responses (list + detail) into the internal array
- * shape consumed by views/templates/front/purchased.tpl, so the template does
- * not need to change.
+ * Maps the Miguel API v2 order list response into the internal array shape
+ * consumed by views/templates/front/purchased.tpl, so the template does not
+ * need to change. The list item (IOrderListItem) carries formats[] with
+ * download URLs, so no detail endpoint is needed.
  */
 class MiguelApiV2OrderMapper
 {
     /**
      * @param array<string,mixed> $listResponse decoded GET /v2/orders page
      *
-     * @return string[] order codes present on this page
+     * @return array<string,array<string,mixed>> orders keyed by their code
      */
-    public static function extractCodes(array $listResponse)
+    public static function indexByCode(array $listResponse)
     {
         if (!isset($listResponse['data']) || !is_array($listResponse['data'])) {
             return [];
         }
 
-        $codes = [];
+        $index = [];
         foreach ($listResponse['data'] as $order) {
             if (isset($order['code'])) {
-                $codes[] = $order['code'];
+                $index[$order['code']] = $order;
             }
         }
 
-        return $codes;
+        return $index;
     }
 
     /**
@@ -553,16 +562,16 @@ class MiguelApiV2OrderMapper
     }
 
     /**
-     * @param array<string,mixed> $detail decoded GET /v2/orders/{code} response
+     * @param array<string,mixed> $order one IOrder from the list `data[]`
      * @param array<string,mixed> $orderMeta PrestaShop-side fields:
      *                                        id_order, reference, date_add, order_state
      *
      * @return array<int,array<string,mixed>> one purchased-page row per linked item
      */
-    public static function mapDetailToBooks(array $detail, array $orderMeta)
+    public static function mapOrderToBooks(array $order, array $orderMeta)
     {
         $rows = [];
-        $items = isset($detail['items']) && is_array($detail['items']) ? $detail['items'] : [];
+        $items = isset($order['items']) && is_array($order['items']) ? $order['items'] : [];
 
         foreach ($items as $item) {
             if (empty($item['product'])) {
@@ -589,7 +598,7 @@ class MiguelApiV2OrderMapper
                 'reference' => $orderMeta['reference'],
                 'date_add' => $orderMeta['date_add'],
                 'order_state' => $orderMeta['order_state'],
-                'paid' => !empty($detail['paid']),
+                'paid' => !empty($order['paid']),
                 'product' => [
                     'book' => ['title' => $title],
                     'formats' => $formats,
@@ -613,7 +622,7 @@ require_once 'src/utils/miguel-api-v2-order-mapper.php';
 - [ ] **Step 5: Run the test to verify it passes**
 
 Run: `make test-docker ARGS="--filter MiguelApiV2OrderMapperTest"`
-Expected: PASS (6 tests). (Without Step 4 the class file is never included and the test still fails with "class not found".)
+Expected: PASS (6 tests: indexByCode ×2, nextPage, mapOrderToBooks ×3). (Without Step 4 the class file is never included and the test still fails with "class not found".)
 
 - [ ] **Step 6: Commit**
 
@@ -624,16 +633,16 @@ git commit -m "feat: add v2 order response mapper for purchased-books page"
 
 ---
 
-## Task 4: Wire `getOrderedBooks()` to the v2 list-then-detail flow
+## Task 4: Wire `getOrderedBooks()` to the paginated v2 list
 
 **Files:**
 - Modify: `miguel.php` — `getOrderedBooks()` (currently around lines 970–1006) and its helper `arrayWithCode()` (now unused for v2 — leave it, it is still referenced by nothing else; remove only if PHPStan flags it).
 
 **Interfaces:**
-- Consumes: `MiguelApiV2OrderMapper::extractCodes()`, `::nextPage()`, `::mapDetailToBooks()` (Task 3); existing `Miguel::curlGet(string $uri): string|false`; `Tools::displayDate`.
+- Consumes: `MiguelApiV2OrderMapper::indexByCode()`, `::nextPage()`, `::mapOrderToBooks()` (Task 3); existing `Miguel::curlGet(string $uri): string|false`; `Tools::displayDate`.
 - Produces: unchanged return contract — either `['result' => false, 'debug' => string]` or a list of purchased-page rows (same shape `purchased.tpl` reads today).
 
-**Context:** Today `getOrderedBooks()` loads the customer's PrestaShop orders, does one `GET /v1/orders?user_email=`, then matches by reference. The v2 flow: page through `GET /v2/orders?userEmail=&limit=100` collecting codes, then for each PrestaShop order whose `reference` is in that set, `GET /v2/orders/{reference}` and map it.
+**Context:** Today `getOrderedBooks()` loads the customer's PrestaShop orders, does one `GET /v1/orders?user_email=`, then matches by reference. The v2 list item now carries `formats[]`, so the flow stays single-call: page through `GET /v2/orders?userEmail=&limit=100` building a `code → order` index, then for each PrestaShop order whose `reference` matches, map that order's items directly. No detail endpoint.
 
 - [ ] **Step 1: Read the current method**
 
@@ -654,28 +663,17 @@ Replace `getOrderedBooks()` with:
 
         $user_email = $this->context->customer->email;
 
-        $codes = $this->collectMiguelOrderCodes($user_email);
-        if (false === $codes) {
+        $miguel_orders = $this->fetchMiguelOrdersByCode($user_email);
+        if (false === $miguel_orders) {
             return ['result' => false, 'debug' => 'get_err'];
         }
-        if (count($codes) < 1) {
+        if (count($miguel_orders) < 1) {
             return ['result' => false, 'debug' => 'no_orders_servantes'];
         }
 
-        $code_set = array_flip($codes);
         $orders = [];
         foreach ($orders_prestashop as $order) {
-            if (!isset($code_set[$order['reference']])) {
-                continue;
-            }
-
-            $detail_json = $this->curlGet('/v2/orders/' . rawurlencode($order['reference']));
-            if (false === $detail_json) {
-                // order not in Miguel (404) or transient error — skip it
-                continue;
-            }
-            $detail = json_decode($detail_json, true);
-            if (!is_array($detail)) {
+            if (!isset($miguel_orders[$order['reference']])) {
                 continue;
             }
 
@@ -685,7 +683,7 @@ Replace `getOrderedBooks()` with:
                 'date_add' => Tools::displayDate($order['date_add'], $this->context->language->id),
                 'order_state' => $order['order_state'],
             ];
-            foreach (MiguelApiV2OrderMapper::mapDetailToBooks($detail, $meta) as $row) {
+            foreach (MiguelApiV2OrderMapper::mapOrderToBooks($miguel_orders[$order['reference']], $meta) as $row) {
                 $orders[] = $row;
             }
         }
@@ -694,33 +692,33 @@ Replace `getOrderedBooks()` with:
     }
 
     /**
-     * Page through GET /v2/orders?userEmail= and collect all order codes.
+     * Page through GET /v2/orders?userEmail= and collect every returned order,
+     * keyed by its code.
      *
      * @param string $user_email
      *
-     * @return string[]|false codes, or false on the first request failure
+     * @return array<string,array<string,mixed>>|false orders by code, or false
+     *                                                  on the first request failure
      */
-    private function collectMiguelOrderCodes($user_email)
+    private function fetchMiguelOrdersByCode($user_email)
     {
-        $codes = [];
+        $orders = [];
         $page = 1;
         do {
             $uri = '/v2/orders?userEmail=' . rawurlencode($user_email) . '&limit=100&page=' . $page;
             $json = $this->curlGet($uri);
             if (false === $json) {
-                return $page === 1 ? false : $codes;
+                return $page === 1 ? false : $orders;
             }
             $decoded = json_decode($json, true);
             if (!is_array($decoded)) {
-                return $page === 1 ? false : $codes;
+                return $page === 1 ? false : $orders;
             }
-            foreach (MiguelApiV2OrderMapper::extractCodes($decoded) as $code) {
-                $codes[] = $code;
-            }
+            $orders += MiguelApiV2OrderMapper::indexByCode($decoded);
             $page = MiguelApiV2OrderMapper::nextPage($decoded);
         } while (null !== $page);
 
-        return $codes;
+        return $orders;
     }
 ```
 
@@ -741,7 +739,7 @@ If a local PHPStan run is available it should also pass at level 5; otherwise CI
 
 ```bash
 git add miguel.php
-git commit -m "feat: load purchased books via GET /v2/orders list + detail"
+git commit -m "feat: load purchased books via paginated GET /v2/orders"
 ```
 
 ---
@@ -778,7 +776,7 @@ Insert a new section at the top of `CHANGELOG.md`, immediately after the `# CHAN
 Changed:
 
 - Outbound order sync now uses the Miguel API **v2** order endpoint: orders are sent with `POST /v2/orders` (v2 `OrderCreate` shape) instead of `POST /v1/orders`.
-- The customer "purchased e-books" page now reads from `GET /v2/orders` (list) and `GET /v2/orders/{code}` (detail) instead of `GET /v1/orders`.
+- The customer "purchased e-books" page now reads from the paginated `GET /v2/orders?userEmail=` list instead of `GET /v1/orders`.
 - Order items sent to Miguel no longer include a regular/list price — v2 `OrderCreateItem` carries only the sold `unitPrice` (`withoutVat`). Unpaid orders now send `purchasedAt: null` (v2 derives paid state from `purchasedAt`).
 
 The module's own inbound API (the `orders`, `order`, `products`, and `order-state-callback` resources) is unchanged.
@@ -802,17 +800,17 @@ git commit -m "chore: bump module to v1.4.0 and document v2 outbound migration"
 
 **Spec coverage:**
 - `POST /v2/orders` migration → Task 1 (builder) + Task 2 (wiring). ✓
-- Purchased-page list-then-detail → Task 3 (mapper) + Task 4 (wiring). ✓
+- Purchased-page paginated list read → Task 3 (mapper) + Task 4 (wiring). ✓
 - Inbound API / `createOrderDetailArray()` / `purchased.tpl` untouched → asserted in Global Constraints; Task 2 Step 3 and Task 4 Step 3 verify inbound tests still pass. ✓
 - OrderCreate field mapping (user, currency, purchasedAt, eshopId/dates, addresses, items, source/socialDrmContent) → Task 1 implementation + tests. ✓
 - `full_name` → `fullName` remap → Task 1 `toV2Address()` + `testAddressesUseCamelCaseFullName`. ✓
 - Regular price dropped / `itemPrice` omitted → Task 1 (`unitPrice` only) + `assertArrayNotHasKey('regular_without_vat')`. ✓
 - Empty-order guard → Task 1 `build()` returns null + `testReturnsNullWhenNoSendableItems`; Task 2 skips on null. ✓
-- Detail→template mapping (title, formats→download_url, paid, skip no-product, empty formats) → Task 3 tests. ✓
-- Pagination via `meta.nextPage` → Task 3 `nextPage()` + Task 4 `collectMiguelOrderCodes()`. ✓
-- 404-on-detail = skip → Task 4 Step 2 (`false === $detail_json` continue). ✓
+- List-order→template mapping (title, formats→download_url, paid, skip no-product, empty/null formats) → Task 3 tests. ✓
+- Pagination via `meta.nextPage` → Task 3 `nextPage()` + Task 4 `fetchMiguelOrdersByCode()`. ✓
+- PrestaShop order not in the returned list = not shown → Task 4 Step 2 (`!isset($miguel_orders[$order['reference']])` continue). ✓
 - Version bump + CHANGELOG → Task 5. ✓
 
 **Placeholder scan:** No TBD/TODO/"handle edge cases"; every code step shows full code. ✓
 
-**Type consistency:** `build(\Order, bool): ?array` used identically in Tasks 1 and 2. `extractCodes`/`nextPage`/`mapDetailToBooks` signatures match between Task 3 definition and Task 4 usage. `$orderMeta` keys (`id_order`, `reference`, `date_add`, `order_state`) consistent between Task 3 test/impl and Task 4 construction. Item keys (`code`, `quantity`, `unitPrice.withoutVat`) consistent. ✓
+**Type consistency:** `build(\Order, bool): ?array` used identically in Tasks 1 and 2. `indexByCode`/`nextPage`/`mapOrderToBooks` signatures match between Task 3 definition and Task 4 usage. `$orderMeta` keys (`id_order`, `reference`, `date_add`, `order_state`) consistent between Task 3 test/impl and Task 4 construction. Item keys (`code`, `quantity`, `unitPrice.withoutVat`) consistent. ✓
