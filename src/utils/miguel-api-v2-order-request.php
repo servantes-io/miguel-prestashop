@@ -44,6 +44,10 @@ class MiguelApiV2OrderRequest
         $deliveryAddress = new \Address((int) $order->id_address_delivery);
         $orderDetail = \OrderDetail::getList($order->id);
 
+        if (!\Validate::isLoadedObject($customer) || !\Validate::isLoadedObject($currency) || !\Validate::isLoadedObject($language)) {
+            return null;
+        }
+
         $items = [];
         foreach (MiguelApiCreateOrderRequest::createProductsArray($order, $orderDetail) as $item) {
             // createProductsArray() returns v1 item arrays (jsonSerialize output):

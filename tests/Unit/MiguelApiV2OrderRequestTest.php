@@ -98,4 +98,12 @@ class MiguelApiV2OrderRequestTest extends DatabaseTestCase
 
         $this->assertNull(MiguelApiV2OrderRequest::build($order, true));
     }
+
+    public function testReturnsNullWhenCustomerUnloadable()
+    {
+        $order = $this->buildOrder('V2NOCUST', '9788024271101');
+        $order->id_customer = 999999999;
+
+        $this->assertNull(MiguelApiV2OrderRequest::build($order, true));
+    }
 }
