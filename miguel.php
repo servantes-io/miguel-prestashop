@@ -24,6 +24,7 @@ require_once 'src/utils/polyfill-getallheaders.php';
 use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelApiV2OrderRequest;
 use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
@@ -497,13 +498,25 @@ class Miguel extends Module
             return;
         } // ověření, že je api povoleno
 
-        $body_orders = $this->createOrderDetailArray($params);
-        if (false == $body_orders) {
-            // ignore when the order is not found or there are no products
+        if (false == isset($params['id_order'])) {
+            return;
+        }
+        $order = new Order((int) $params['id_order']);
+        if (false == Validate::isLoadedObject($order)) {
             return;
         }
 
-        $res = $this->curlPost('/v1/orders', $body_orders);
+        $paid = isset($params['newOrderStatus'])
+            ? (bool) $params['newOrderStatus']->paid
+            : $order->hasBeenPaid();
+
+        $body_order = MiguelApiV2OrderRequest::build($order, $paid);
+        if (null === $body_order) {
+            // no products, or none with a reference — nothing to send
+            return;
+        }
+
+        $this->curlPost('/v2/orders', $body_order);
     }
 
     /**
