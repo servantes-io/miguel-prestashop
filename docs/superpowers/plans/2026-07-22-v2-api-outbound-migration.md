@@ -42,7 +42,8 @@ Modified:
 - Test: `tests/Unit/MiguelApiV2OrderRequestTest.php`
 
 **Interfaces:**
-- Consumes: `Miguel\Utils\MiguelApiCreateOrderRequest::createProductsArray(\Order $order, array $order_detail): MiguelApiCreateOrderItem[]` (existing, reused), `::structureAddress(?\Address): ?array`, `::composeAddress(\Address): string`; `Miguel\Utils\MiguelApiCreateOrderItem` getters `getCode()`, `getQuantity()`, `getSoldPrice()`.
+- Consumes: `Miguel\Utils\MiguelApiCreateOrderRequest::createProductsArray(\Order $order, array $order_detail): array` (existing, reused) — returns **v1 item arrays** (the `jsonSerialize()` output), each shaped `['code' => string, 'quantity' => int, 'price' => ['regular_without_vat' => float, 'sold_without_vat' => float]]`, with pack-splitting + dedup already applied. Also `::structureAddress(?\Address): ?array` and `::composeAddress(\Address): string`.
+- NOTE: `createProductsArray()` returns arrays, **not** `MiguelApiCreateOrderItem` objects (it calls `jsonSerialize()` internally). Do not call getters on the items — read the array keys. The method must not be changed; the v1 inbound path (`createOrderDetailArray`) depends on this exact return shape.
 - Produces: `MiguelApiV2OrderRequest::build(\Order $order, bool $paid): ?array` — the `OrderCreate` array, or `null` when the order has no sendable items (empty-order guard). Consumed by Task 2.
 
 - [ ] **Step 1: Write the failing test**
@@ -211,11 +212,14 @@ class MiguelApiV2OrderRequest
 
         $items = [];
         foreach (MiguelApiCreateOrderRequest::createProductsArray($order, $orderDetail) as $item) {
+            // createProductsArray() returns v1 item arrays (jsonSerialize output):
+            // ['code', 'quantity', 'price' => ['regular_without_vat', 'sold_without_vat']].
+            // v2 carries only the sold unit price; the regular price has no v2 field.
             $items[] = [
-                'code' => $item->getCode(),
-                'quantity' => $item->getQuantity(),
+                'code' => $item['code'],
+                'quantity' => $item['quantity'],
                 'unitPrice' => [
-                    'withoutVat' => $item->getSoldPrice(),
+                    'withoutVat' => $item['price']['sold_without_vat'],
                 ],
             ];
         }

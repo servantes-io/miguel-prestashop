@@ -66,9 +66,12 @@ New files under `src/utils/`:
 Reused as-is:
 
 - `MiguelApiCreateOrderRequest::createProductsArray()` — pack-splitting + duplicate
-  removal, already unit-tested. The V2 request builder calls it to obtain
-  `MiguelApiCreateOrderItem[]`, then serializes each item to the V2 shape via the
-  item's existing getters (`getCode()`, `getQuantity()`, `getSoldPrice()`).
+  removal, already unit-tested. It returns v1 item **arrays** (its `jsonSerialize()`
+  output: `['code', 'quantity', 'price' => ['regular_without_vat', 'sold_without_vat']]`).
+  The V2 request builder reads those keys and re-shapes each into a v2
+  `OrderCreateItem` (`unitPrice.withoutVat` from `sold_without_vat`; the regular
+  price has no v2 field). The method itself is unchanged — the v1 inbound path
+  depends on its exact return shape.
 - `MiguelApiCreateOrderRequest::composeAddress()` / `structureAddress()` — the
   V2 request builder reuses `structureAddress()` and remaps its keys to V2
   `OrderAddressModel`. All keys match except `full_name` → **`fullName`**
