@@ -1011,7 +1011,7 @@ class Miguel extends Module
      * @param string $user_email
      *
      * @return array<string,array<string,mixed>>|false orders by code, or false
-     *                                                  on the first request failure
+     *                                                 on the first request failure
      */
     private function fetchMiguelOrdersByCode($user_email)
     {

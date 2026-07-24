@@ -65,7 +65,7 @@ class MiguelApiV2OrderMapper
     /**
      * @param array<string,mixed> $order one IOrder from the list `data[]`
      * @param array<string,mixed> $orderMeta PrestaShop-side fields:
-     *                                        id_order, reference, date_add, order_state
+     *                                       id_order, reference, date_add, order_state
      *
      * @return array<int,array<string,mixed>> one purchased-page row per linked item
      */
