@@ -90,10 +90,11 @@ class MiguelApiV2OrderRequest
     }
 
     /**
-     * Remap the v1 structured-address keys to v2 OrderAddressModel. Only
-     * full_name differs (-> fullName); the rest are identical.
+     * Build a v2 OrderAddressModel from the v1 structured-address array.
+     * Returns a new array with all v2 keys (only full_name -> fullName differs;
+     * the rest map across unchanged). The input is not modified.
      *
-     * @param array<string,mixed>|null $address
+     * @param array<string,mixed>|null $address structureAddress() output
      *
      * @return array<string,mixed>|null
      */
@@ -103,9 +104,16 @@ class MiguelApiV2OrderRequest
             return null;
         }
 
-        $address['fullName'] = $address['full_name'];
-        unset($address['full_name']);
-
-        return $address;
+        return [
+            'fullName' => $address['full_name'],
+            'company' => $address['company'],
+            'address1' => $address['address1'],
+            'address2' => $address['address2'],
+            'city' => $address['city'],
+            'state' => $address['state'],
+            'zip' => $address['zip'],
+            'country' => $address['country'],
+            'phone' => $address['phone'],
+        ];
     }
 }
