@@ -2,6 +2,10 @@
 
 ## v1.4.0
 
+Added:
+
+- On module upgrade, the module now calls the Miguel connect endpoint (`POST /v2/eshop/prestashop/connect`) once via PrestaShop's upgrade mechanism, so Miguel learns the new module version and endpoint URLs without waiting for an admin to open the module configuration page.
+
 Changed:
 
 - Outbound order sync now uses the Miguel API **v2** order endpoint: orders are sent with `POST /v2/orders` (v2 `OrderCreate` shape) instead of `POST /v1/orders`.
