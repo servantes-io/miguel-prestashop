@@ -16,6 +16,8 @@ require_once 'src/utils/miguel-settings.php';
 require_once 'src/utils/miguel-api-response.php';
 require_once 'src/utils/miguel-api-create-order-item.php';
 require_once 'src/utils/miguel-api-create-order-request.php';
+require_once 'src/utils/miguel-api-v2-order-request.php';
+require_once 'src/utils/miguel-api-v2-order-mapper.php';
 require_once 'src/utils/miguel-api-error.php';
 require_once 'src/utils/miguel-api-dispatcher.php';
 require_once 'src/utils/polyfill-getallheaders.php';
@@ -23,6 +25,8 @@ require_once 'src/utils/polyfill-getallheaders.php';
 use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
+use Miguel\Utils\MiguelApiV2OrderMapper;
+use Miguel\Utils\MiguelApiV2OrderRequest;
 use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
@@ -51,7 +55,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.3.0';
+        $this->version = '1.4.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -496,13 +500,25 @@ class Miguel extends Module
             return;
         } // ověření, že je api povoleno
 
-        $body_orders = $this->createOrderDetailArray($params);
-        if (false == $body_orders) {
-            // ignore when the order is not found or there are no products
+        if (false == isset($params['id_order'])) {
+            return;
+        }
+        $order = new Order((int) $params['id_order']);
+        if (false == Validate::isLoadedObject($order)) {
             return;
         }
 
-        $res = $this->curlPost('/v1/orders', $body_orders);
+        $paid = isset($params['newOrderStatus'])
+            ? (bool) $params['newOrderStatus']->paid
+            : $order->hasBeenPaid();
+
+        $body_order = MiguelApiV2OrderRequest::build($order, $paid);
+        if (null === $body_order) {
+            // no products, or none with a reference — nothing to send
+            return;
+        }
+
+        $this->curlPost('/v2/orders', $body_order);
     }
 
     /**
@@ -951,56 +967,74 @@ class Miguel extends Module
         return $this->fetch('module:miguel/views/templates/hook/displayCustomerAccount.tpl');
     }
 
-    private function arrayWithCode($arr, $code)
-    {
-        foreach ($arr['orders'] as $key => $item) {
-            if ($item['code'] == $code) {
-                return $item;
-            }
-        }
-
-        return false;
-    }
-
     public function getOrderedBooks()
     {
-        // načtu všechny objednávky přihlášenoho uživatele
         $orders_prestashop = Order::getCustomerOrders((int) $this->context->customer->id);
         if (count($orders_prestashop) < 1) {
             return ['result' => false, 'debug' => 'no_orders_prestashop'];
-        } // žádné objednávky od uživatele v prestashopu
+        }
 
         $user_email = $this->context->customer->email;
 
-        $uri = '/v1/orders?user_email=' . $user_email;
-        $orders_servantes_json = $this->curlGet($uri);
-
-        if (false == $orders_servantes_json) {
+        $miguel_orders = $this->fetchMiguelOrdersByCode($user_email);
+        if (false === $miguel_orders) {
             return ['result' => false, 'debug' => 'get_err'];
-        } // žádné objednávky od uživatele v miguelovi
-
-        $orders_servantes = json_decode($orders_servantes_json, true);
-        if (count($orders_servantes) < 1) {
+        }
+        if (count($miguel_orders) < 1) {
             return ['result' => false, 'debug' => 'no_orders_servantes'];
-        } // žádné objednávky od uživatele v servantes
+        }
 
         $orders = [];
-        foreach ($orders_prestashop as $key => $order) {
-            $arr = $this->arrayWithCode($orders_servantes, $order['reference']);
-            if ($arr) {
-                foreach ($arr['products'] as $key1 => $product) {
-                    if (isset($product['book'])) { // produkt je kniha
-                        $orders[] = [
-                            'id_order' => $order['id_order'],
-                            'reference' => $order['reference'],
-                            'date_add' => Tools::displayDate($order['date_add'], $this->context->language->id),
-                            'order_state' => $order['order_state'],
-                            'paid' => (($arr['paid']) ? ('1') : ('0')),
-                            'product' => $product,
-                        ];
-                    }
-                }
+        foreach ($orders_prestashop as $order) {
+            if (!isset($miguel_orders[$order['reference']])) {
+                continue;
             }
+
+            $meta = [
+                'id_order' => $order['id_order'],
+                'reference' => $order['reference'],
+                'date_add' => Tools::displayDate($order['date_add'], $this->context->language->id),
+                'order_state' => $order['order_state'],
+            ];
+            foreach (MiguelApiV2OrderMapper::mapOrderToBooks($miguel_orders[$order['reference']], $meta) as $row) {
+                $orders[] = $row;
+            }
+        }
+
+        return $orders;
+    }
+
+    /**
+     * Page through GET /v2/orders?userEmail= and collect every returned order,
+     * keyed by its code.
+     *
+     * @param string $user_email
+     *
+     * @return array<string,array<string,mixed>>|false orders by code, or false
+     *                                                 on the first request failure
+     */
+    private function fetchMiguelOrdersByCode($user_email)
+    {
+        $orders = [];
+        $page = 1;
+        $maxPages = 1000;
+        for ($i = 0; $i < $maxPages && null !== $page; ++$i) {
+            $uri = '/v2/orders?userEmail=' . rawurlencode($user_email) . '&limit=100&page=' . $page;
+            $json = $this->curlGet($uri);
+            if (false === $json) {
+                return $page === 1 ? false : $orders;
+            }
+            $decoded = json_decode($json, true);
+            if (!is_array($decoded)) {
+                return $page === 1 ? false : $orders;
+            }
+            $orders += MiguelApiV2OrderMapper::indexByCode($decoded);
+            $next = MiguelApiV2OrderMapper::nextPage($decoded);
+            // Guard against a non-advancing cursor (backend bug) that would loop forever.
+            if (null !== $next && $next <= $page) {
+                break;
+            }
+            $page = $next;
         }
 
         return $orders;

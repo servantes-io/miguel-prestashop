@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.4.0
+
+Changed:
+
+- Outbound order sync now uses the Miguel API **v2** order endpoint: orders are sent with `POST /v2/orders` (v2 `OrderCreate` shape) instead of `POST /v1/orders`.
+- The customer "purchased e-books" page now reads from the paginated `GET /v2/orders?userEmail=` list instead of `GET /v1/orders`.
+- Order items sent to Miguel no longer include a regular/list price — v2 `OrderCreateItem` carries only the sold `unitPrice` (`withoutVat`). Unpaid orders now send `purchasedAt: null` (v2 derives paid state from `purchasedAt`).
+
+The module's own inbound API (the `orders`, `order`, `products`, and `order-state-callback` resources) is unchanged.
+
 ## v1.3.0
 
 Added:
