@@ -84,8 +84,7 @@ class MiguelApiV2OrderRequest
             'eshopUpdatedAt' => date(DATE_ISO8601, strtotime($order->date_upd)),
             'billingAddress' => self::toV2Address(MiguelApiCreateOrderRequest::structureAddress($invoiceAddress)),
             'shippingAddress' => self::toV2Address(MiguelApiCreateOrderRequest::structureAddress($deliveryAddress)),
-            'source' => null,
-            'socialDrmContent' => null,
+            'source' => 'prestashop',
             'items' => $items,
         ];
     }
