@@ -44,6 +44,9 @@ class Miguel extends Module
         'displayCustomerAccount', // called when the customer account is displayed
     ];
 
+    /** Seconds to wait for the connect POST during upgrade so the upgrade screen never hangs. */
+    public const CONNECT_TIMEOUT = 10;
+
     /**
      * @var Miguel|null
      */
@@ -155,8 +158,7 @@ class Miguel extends Module
                 $module_state = 'info_setup_module';
             }
         } elseif ($api_configuration['api_enable']) { // je povoleno api, validuji token
-            $prestashopDetails = $this->getPrestashopDetails();
-            $test_key = $this->curlPost('/v2/eshop/prestashop/connect', $prestashopDetails);
+            $test_key = $this->connectToMiguel();
             if (false == $test_key) {
                 $module_state = 'warning_api_fail';
                 // pokud se nepodaří přihlásit, tak deaktivuji API
@@ -575,8 +577,9 @@ class Miguel extends Module
     /**
      * @param string $uri
      * @param array<string, string> $params
+     * @param int $timeout seconds; 0 disables the explicit timeout (default)
      */
-    public function curlPost($uri, array $params)
+    public function curlPost($uri, array $params, $timeout = 0)
     {
         $configuration = $this->getCurrentApiConfiguration();
         if (false == $configuration) {
@@ -604,6 +607,11 @@ class Miguel extends Module
             CURLOPT_POST => 1,
             CURLOPT_POSTFIELDS => json_encode($params),
         ]);
+
+        if ($timeout > 0) {
+            curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, $timeout);
+            curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
+        }
 
         $headers = [];
         $headers[] = 'Content-Type: application/json';
@@ -664,6 +672,18 @@ class Miguel extends Module
         ];
 
         return $ps;
+    }
+
+    /**
+     * Report this shop's details to Miguel (pairing / connect).
+     *
+     * @param int $timeout seconds; 0 disables the explicit timeout (default)
+     *
+     * @return string|bool
+     */
+    public function connectToMiguel($timeout = 0)
+    {
+        return $this->curlPost('/v2/eshop/prestashop/connect', $this->getPrestashopDetails(), $timeout);
     }
 
     public function getAllProducts()
