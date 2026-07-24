@@ -12,7 +12,6 @@
  *  @copyright  2022 - 2023 Servantes
  *  @license LICENSE.txt
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -29,7 +28,7 @@ function upgrade_module_1_4_0($module)
 {
     try {
         $module->connectToMiguel(Miguel::CONNECT_TIMEOUT);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         // Best-effort notify — a failed connect must never block the module upgrade.
     }
 
