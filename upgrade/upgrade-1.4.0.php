@@ -27,7 +27,11 @@ if (!defined('_PS_VERSION_')) {
  */
 function upgrade_module_1_4_0($module)
 {
-    $module->connectToMiguel(Miguel::CONNECT_TIMEOUT);
+    try {
+        $module->connectToMiguel(Miguel::CONNECT_TIMEOUT);
+    } catch (\Throwable $e) {
+        // Best-effort notify — a failed connect must never block the module upgrade.
+    }
 
     return true;
 }

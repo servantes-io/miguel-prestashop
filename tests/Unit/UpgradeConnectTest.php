@@ -54,4 +54,18 @@ class UpgradeConnectTest extends DatabaseTestCase
 
         $this->assertTrue(upgrade_module_1_4_0($module));
     }
+
+    public function testUpgradeSucceedsWhenConnectThrows()
+    {
+        require_once __DIR__ . '/../../upgrade/upgrade-1.4.0.php';
+
+        $module = new class extends Miguel {
+            public function connectToMiguel($timeout = 0)
+            {
+                throw new \RuntimeException('Miguel unreachable');
+            }
+        };
+
+        $this->assertTrue(upgrade_module_1_4_0($module));
+    }
 }
