@@ -58,7 +58,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.4.0';
+        $this->version = '1.5.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -668,6 +668,7 @@ class Miguel extends Module
             'orders' => $endpointBase . 'orders',
             'order' => $endpointBase . 'order',
             'products' => $endpointBase . 'products',
+            'deliveryMethods' => $endpointBase . 'delivery-methods',
             'orderStateCallback' => $endpointBase . 'order-state-callback',
         ];
 
@@ -813,6 +814,68 @@ class Miguel extends Module
         }
 
         return $updated_orders;
+    }
+
+    /**
+     * Return active PrestaShop carrier/zone combinations for Miguel's
+     * delivery-method catalogue. This is deliberately read-only: Miguel must
+     * never change the shop's carrier configuration while synchronising it.
+     *
+     * Prices are the lowest configured delivery price for the carrier/zone.
+     * PrestaShop can calculate the final price from a cart's weight or value;
+     * the current Miguel delivery model stores one representative price.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function getDeliveryMethods()
+    {
+        $id_shop = (int) Configuration::get('PS_SHOP_DEFAULT');
+        $id_lang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $id_currency = (int) Configuration::get('PS_CURRENCY_DEFAULT');
+        $currency = Currency::getCurrencyInstance($id_currency);
+        $currencyIso = $currency && !empty($currency->iso_code) ? $currency->iso_code : null;
+
+        $sql = 'SELECT c.`id_carrier`, c.`name`, c.`is_free`, c.`shipping_method`,
+                    cl.`delay`, cz.`id_zone`, z.`name` AS `zone_name`, MIN(d.`price`) AS `price`
+                FROM `' . _DB_PREFIX_ . 'carrier` c
+                LEFT JOIN `' . _DB_PREFIX_ . 'carrier_lang` cl
+                    ON cl.`id_carrier` = c.`id_carrier` AND cl.`id_lang` = ' . (int) $id_lang . '
+                INNER JOIN `' . _DB_PREFIX_ . 'carrier_zone` cz
+                    ON cz.`id_carrier` = c.`id_carrier`
+                INNER JOIN `' . _DB_PREFIX_ . 'zone` z ON z.`id_zone` = cz.`id_zone`
+                LEFT JOIN `' . _DB_PREFIX_ . 'delivery` d
+                    ON d.`id_carrier` = c.`id_carrier`
+                    AND d.`id_zone` = cz.`id_zone`
+                    AND (d.`id_shop` = ' . (int) $id_shop . ' OR d.`id_shop` IS NULL)
+                WHERE c.`active` = 1 AND c.`deleted` = 0
+                GROUP BY c.`id_carrier`, c.`name`, c.`is_free`, c.`shipping_method`,
+                    cl.`delay`, cz.`id_zone`, z.`name`
+                ORDER BY c.`position`, c.`id_carrier`, cz.`id_zone`';
+
+        $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $methods = [];
+        foreach ($rows as $row) {
+            $price = $row['price'];
+            $isFree = (bool) $row['is_free'];
+
+            $methods[] = [
+                'id' => (int) $row['id_carrier'],
+                'name' => (string) $row['name'],
+                'description' => isset($row['delay']) ? (string) $row['delay'] : null,
+                'enabled' => true,
+                'currency' => $currencyIso,
+                'cost' => $isFree || $price === null ? '0' : (string) $price,
+                'zone_id' => (int) $row['id_zone'],
+                'zone_name' => (string) $row['zone_name'],
+                'is_free' => $isFree,
+            ];
+        }
+
+        return $methods;
     }
 
     /**

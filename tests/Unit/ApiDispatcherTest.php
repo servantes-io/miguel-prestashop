@@ -80,6 +80,27 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertIsArray($response->getData());
     }
 
+    public function testDeliveryMethodsSucceedWithCustomHeaderToken()
+    {
+        $_SERVER['HTTP_X_MIGUEL_TOKEN'] = '1234';
+
+        $response = $this->dispatcher()->dispatch('delivery-methods', 'GET', [], '');
+
+        $this->assertTrue($response->getResult());
+        $this->assertSame('deliveryMethods', $response->getDataKey());
+        $this->assertIsArray($response->getData());
+    }
+
+    public function testDeliveryMethodsRejectNonGet()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('delivery-methods', 'POST', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('method.not_allowed', $response->getData()->getCode());
+    }
+
     public function testOrderStateCallbackWithEmptyBodyReturnsPayloadInvalid()
     {
         $_SERVER['Authorization'] = 'Bearer 1234';
@@ -140,5 +161,7 @@ class ApiDispatcherTest extends DatabaseTestCase
         // getModuleLink orders query params differently across PrestaShop versions,
         // so assert the resource param is present rather than at a fixed position.
         $this->assertStringContainsString('resource=order', $details['endpoints']['order']);
+        $this->assertArrayHasKey('deliveryMethods', $details['endpoints']);
+        $this->assertStringContainsString('resource=delivery-methods', $details['endpoints']['deliveryMethods']);
     }
 }

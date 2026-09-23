@@ -37,7 +37,7 @@ class MiguelApiDispatcher
     }
 
     /**
-     * @param string $resource one of: orders, order, products, order-state-callback
+     * @param string $resource one of: orders, order, products, delivery-methods, order-state-callback
      * @param string $method HTTP method (GET/POST)
      * @param array $get query parameters
      * @param string $rawBody raw request body (for POST resources)
@@ -68,6 +68,13 @@ class MiguelApiDispatcher
                 }
 
                 return MiguelApiResponse::success($this->module->getAllProducts(), 'products');
+
+            case 'delivery-methods':
+                if ($method !== 'GET') {
+                    return MiguelApiResponse::error(MiguelApiError::methodNotAllowed($method));
+                }
+
+                return MiguelApiResponse::success($this->module->getDeliveryMethods(), 'deliveryMethods');
 
             case 'order':
                 if ($method !== 'GET') {
