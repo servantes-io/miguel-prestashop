@@ -104,6 +104,16 @@ class MiguelApiDispatcher
 
                 return MiguelApiResponse::success($this->module->setOrderStates($data), 'result');
 
+            case 'order-create':
+                if ($method !== 'POST') {
+                    return MiguelApiResponse::error(MiguelApiError::methodNotAllowed($method));
+                }
+                $data = json_decode($rawBody, true);
+                if (!is_array($data)) {
+                    return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
+                }
+                return $this->module->createOutboundOrder($data);
+
             default:
                 return MiguelApiResponse::error(MiguelApiError::resourceNotFound((string) $resource));
         }
