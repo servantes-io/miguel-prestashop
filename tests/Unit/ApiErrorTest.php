@@ -30,4 +30,12 @@ class ApiErrorTest extends TestCase
         $this->assertSame('order.not_found', $error->getCode());
         $this->assertSame('Order XKBKNABJK not found', $error->getMessage());
     }
+
+    public function testOutboundOrderFailureIncludesDiagnosticMessage()
+    {
+        $error = MiguelApiError::outboundOrderFailed('Table ps_miguel_outbound_order does not exist');
+
+        $this->assertSame('order.create_failed', $error->getCode());
+        $this->assertSame('Outbound order creation failed: Table ps_miguel_outbound_order does not exist', $error->getMessage());
+    }
 }

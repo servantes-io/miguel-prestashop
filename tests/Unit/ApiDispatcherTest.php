@@ -101,6 +101,16 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertSame('method.not_allowed', $response->getData()->getCode());
     }
 
+    public function testOrderCreateRejectsNonPost()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-create', 'GET', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('method.not_allowed', $response->getData()->getCode());
+    }
+
     public function testOrderStateCallbackWithEmptyBodyReturnsPayloadInvalid()
     {
         $_SERVER['Authorization'] = 'Bearer 1234';
@@ -163,5 +173,7 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertStringContainsString('resource=order', $details['endpoints']['order']);
         $this->assertArrayHasKey('deliveryMethods', $details['endpoints']);
         $this->assertStringContainsString('resource=delivery-methods', $details['endpoints']['deliveryMethods']);
+        $this->assertArrayHasKey('orderCreate', $details['endpoints']);
+        $this->assertStringContainsString('resource=order-create', $details['endpoints']['orderCreate']);
     }
 }

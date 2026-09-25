@@ -130,4 +130,9 @@ class MiguelApiError implements \JsonSerializable
     {
         return new self('unknown.error', 'Unknown error');
     }
+
+    public static function outboundOrderFailed($message): MiguelApiError
+    {
+        return new self('order.create_failed', 'Outbound order creation failed: ' . (string) $message);
+    }
 }

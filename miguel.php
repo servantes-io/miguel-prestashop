@@ -16,6 +16,8 @@ require_once 'src/utils/miguel-settings.php';
 require_once 'src/utils/miguel-api-response.php';
 require_once 'src/utils/miguel-api-create-order-item.php';
 require_once 'src/utils/miguel-api-create-order-request.php';
+require_once 'src/utils/miguel-api-outbound-order-request.php';
+require_once 'src/utils/miguel-api-outbound-order-creator.php';
 require_once 'src/utils/miguel-api-v2-order-request.php';
 require_once 'src/utils/miguel-api-v2-order-mapper.php';
 require_once 'src/utils/miguel-api-error.php';
@@ -24,6 +26,8 @@ require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiOutboundOrderCreator;
+use Miguel\Utils\MiguelApiOutboundOrderRequest;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelApiV2OrderMapper;
 use Miguel\Utils\MiguelApiV2OrderRequest;
@@ -36,11 +40,15 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-class Miguel extends Module
+// PaymentModule provides the native validateOrder() workflow used for mobile
+// orders. Miguel still does not expose a checkout payment option; it creates
+// the order in the configured unpaid bank-wire state only.
+class Miguel extends PaymentModule
 {
     public const HOOKS = [
         'header',
         'actionOrderStatusUpdate', // called when the order status is changed
+        'actionEmailSendBefore', // suppress customer mail for API-created unpaid orders
         'displayCustomerAccount', // called when the customer account is displayed
     ];
 
@@ -52,13 +60,19 @@ class Miguel extends Module
      */
     private static $sharedInstance;
 
+    /** @var bool Request-local flag set only around native outbound creation. */
+    private static $suppressOutboundOrderEmail = false;
+
+    /** @var bool Request-local guard against sending a Miguel-created order back to Miguel. */
+    private static $suppressOutboundOrderSync = false;
+
     private $_logger;
 
     public function __construct()
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.5.0';
+        $this->version = '1.6.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -498,6 +512,9 @@ class Miguel extends Module
 
     public function hookActionOrderStatusUpdate($params)
     {
+        if (self::$suppressOutboundOrderSync) {
+            return;
+        }
         if (false == MiguelSettings::getEnabled()) {
             return;
         } // ověření, že je api povoleno
@@ -507,6 +524,9 @@ class Miguel extends Module
         }
         $order = new Order((int) $params['id_order']);
         if (false == Validate::isLoadedObject($order)) {
+            return;
+        }
+        if ($this->isMiguelOutboundOrder((int) $order->id)) {
             return;
         }
 
@@ -669,10 +689,53 @@ class Miguel extends Module
             'order' => $endpointBase . 'order',
             'products' => $endpointBase . 'products',
             'deliveryMethods' => $endpointBase . 'delivery-methods',
+            'orderCreate' => $endpointBase . 'order-create',
             'orderStateCallback' => $endpointBase . 'order-state-callback',
         ];
 
         return $ps;
+    }
+
+    /**
+     * Boundary for orders Miguel creates in this shop. The dispatcher owns
+     * authentication and JSON parsing; the outbound-order service validates and
+     * creates the native unpaid PrestaShop order.
+     *
+     * @param array $payload
+     * @return MiguelApiResponse
+     */
+    public function createOutboundOrder(array $payload)
+    {
+        try {
+            self::$suppressOutboundOrderEmail = true;
+            self::$suppressOutboundOrderSync = true;
+            try {
+                $result = (new MiguelApiOutboundOrderCreator($this))->create(
+                    MiguelApiOutboundOrderRequest::fromPayload($payload)
+                );
+            } finally {
+                self::$suppressOutboundOrderEmail = false;
+                self::$suppressOutboundOrderSync = false;
+            }
+            return MiguelApiResponse::success($result, 'order');
+        } catch (\InvalidArgumentException $exception) {
+            return MiguelApiResponse::error(MiguelApiError::invalidPayload($exception->getMessage()));
+        } catch (\Throwable $exception) {
+            if (defined('_LOGGER_')) {
+                $this->_logger->logError('Unable to create Miguel outbound order: ' . $exception->getMessage());
+            }
+            return MiguelApiResponse::error(MiguelApiError::outboundOrderFailed($exception->getMessage()));
+        }
+    }
+
+    /**
+     * PaymentModule::validateOrder normally sends a confirmation mail. Miguel
+     * creates only an unpaid technical order; the mobile checkout owns customer
+     * communication, therefore suppress mail for this one request only.
+     */
+    public function hookActionEmailSendBefore($params)
+    {
+        return self::$suppressOutboundOrderEmail ? false : true;
     }
 
     /**
@@ -798,7 +861,12 @@ class Miguel extends Module
     {
         $date_upd = date('Y-m-d H:i:s', strtotime($updated_since));
 
-        $request = 'SELECT `id_order` FROM `' . _DB_PREFIX_ . 'orders` WHERE `date_upd` >= "' . pSQL($date_upd) . '"';
+        $request = 'SELECT o.`id_order` FROM `' . _DB_PREFIX_ . 'orders` o
+            WHERE o.`date_upd` >= "' . pSQL($date_upd) . '"
+            AND NOT EXISTS (
+                SELECT 1 FROM `' . _DB_PREFIX_ . 'miguel_outbound_order` outbound
+                WHERE outbound.`id_order` = o.`id_order`
+            )';
         $db = Db::getInstance(false);
         $result = $db->executeS($request);
 
@@ -816,14 +884,21 @@ class Miguel extends Module
         return $updated_orders;
     }
 
+    private function isMiguelOutboundOrder($orderId)
+    {
+        return (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'miguel_outbound_order` WHERE `id_order` = ' . (int) $orderId
+        ) > 0;
+    }
+
     /**
      * Return active PrestaShop carrier/zone combinations for Miguel's
      * delivery-method catalogue. This is deliberately read-only: Miguel must
      * never change the shop's carrier configuration while synchronising it.
      *
-     * Prices are the lowest configured delivery price for the carrier/zone.
-     * PrestaShop can calculate the final price from a cart's weight or value;
-     * the current Miguel delivery model stores one representative price.
+     * Prices and price rules are read from PrestaShop's carrier configuration.
+     * Every method includes at least one pricing rule: carriers without a
+     * price range receive one open-ended rule using their configured cost.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -861,6 +936,13 @@ class Miguel extends Module
         foreach ($rows as $row) {
             $price = $row['price'];
             $isFree = (bool) $row['is_free'];
+            $fallbackCost = $isFree || $price === null ? 0.0 : (float) $price;
+            $pricing = $this->getDeliveryPricingRules(
+                (int) $row['id_carrier'],
+                (int) $row['id_zone'],
+                $id_shop,
+                $fallbackCost
+            );
 
             $methods[] = [
                 'id' => (int) $row['id_carrier'],
@@ -868,14 +950,60 @@ class Miguel extends Module
                 'description' => isset($row['delay']) ? (string) $row['delay'] : null,
                 'enabled' => true,
                 'currency' => $currencyIso,
-                'cost' => $isFree || $price === null ? '0' : (string) $price,
+                'cost' => (string) $fallbackCost,
                 'zone_id' => (int) $row['id_zone'],
                 'zone_name' => (string) $row['zone_name'],
                 'is_free' => $isFree,
+                'pricing_rules' => $pricing['rules'],
+                'disable_outside_ranges' => $pricing['disable_outside_ranges'],
             ];
         }
 
         return $methods;
+    }
+
+    /**
+     * @return array{rules:array<int,array{from:float,to:?float,cost:float}>,disable_outside_ranges:bool}
+     */
+    private function getDeliveryPricingRules($id_carrier, $id_zone, $id_shop, $fallbackCost)
+    {
+        $sql = 'SELECT rp.`delimiter1` AS `from_value`, rp.`delimiter2` AS `to_value`,
+                    MIN(d.`price`) AS `price`
+                FROM `' . _DB_PREFIX_ . 'range_price` rp
+                INNER JOIN `' . _DB_PREFIX_ . 'delivery` d
+                    ON d.`id_range_price` = rp.`id_range_price`
+                    AND d.`id_carrier` = ' . (int) $id_carrier . '
+                    AND d.`id_zone` = ' . (int) $id_zone . '
+                    AND (d.`id_shop` = ' . (int) $id_shop . ' OR d.`id_shop` IS NULL)
+                WHERE rp.`id_carrier` = ' . (int) $id_carrier . '
+                GROUP BY rp.`id_range_price`, rp.`delimiter1`, rp.`delimiter2`
+                ORDER BY rp.`delimiter1`';
+
+        $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        if (!is_array($rows) || count($rows) === 0) {
+            return [
+                'rules' => [[
+                    'from' => 0.0,
+                    'to' => null,
+                    'cost' => (float) $fallbackCost,
+                ]],
+                'disable_outside_ranges' => false,
+            ];
+        }
+
+        $rules = [];
+        foreach ($rows as $row) {
+            $rules[] = [
+                'from' => (float) $row['from_value'],
+                'to' => $row['to_value'] === null ? null : (float) $row['to_value'],
+                'cost' => (float) $row['price'],
+            ];
+        }
+
+        return [
+            'rules' => $rules,
+            'disable_outside_ranges' => true,
+        ];
     }
 
     /**

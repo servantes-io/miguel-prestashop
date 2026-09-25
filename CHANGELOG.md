@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v1.6.0
+
+- Normalize frozen shipping totals before saving the native PrestaShop order.
+- Keep tax-included and tax-excluded order totals synchronized when freezing Miguel shipping prices.
+- Do not increase `total_paid_real` for unpaid outbound orders.
+- Outbound order creation now validates idempotency payloads and can resume finalization of an order that was created before a transient failure.
+- Orders with multiple different shipping carriers are rejected explicitly instead of silently using only the first carrier.
+- Shipping totals for repeated lines using the same carrier are combined before the native PrestaShop order totals are finalized.
+- Delivery-method responses now include complete PrestaShop price rules. Fixed-price and free carriers include an open-ended rule.
+- Orders created from Miguel are not sent back to Miguel by the immediate PrestaShop hook or by later periodic order export.
+- Idempotent creation records the cart before native order validation so a retry can recover an order
+  whose external-order marker update was interrupted.
+
 ## v1.4.0
 
 Added:
