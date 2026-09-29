@@ -30,10 +30,12 @@ class PrestashopDetailsTest extends DatabaseTestCase
         $this->assertArrayHasKey('orders', $details['endpoints']);
         $this->assertArrayHasKey('products', $details['endpoints']);
         $this->assertArrayHasKey('orderStateCallback', $details['endpoints']);
+        $this->assertArrayHasKey('orderPayment', $details['endpoints']);
 
         $this->assertStringContainsString('resource=orders', $details['endpoints']['orders']);
         $this->assertStringContainsString('resource=products', $details['endpoints']['products']);
         $this->assertStringContainsString('resource=order-state-callback', $details['endpoints']['orderStateCallback']);
+        $this->assertStringContainsString('resource=order-payment', $details['endpoints']['orderPayment']);
     }
 
     public function testEndpointsUseIndexPhpDispatchForm()
@@ -64,6 +66,7 @@ class PrestashopDetailsTest extends DatabaseTestCase
         $this->assertSame($base . 'order', $details['endpoints']['order']);
         $this->assertSame($base . 'products', $details['endpoints']['products']);
         $this->assertSame($base . 'order-state-callback', $details['endpoints']['orderStateCallback']);
+        $this->assertSame($base . 'order-payment', $details['endpoints']['orderPayment']);
 
         foreach ($details['endpoints'] as $url) {
             $this->assertStringNotContainsString('://', $url);

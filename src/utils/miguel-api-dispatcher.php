@@ -37,7 +37,7 @@ class MiguelApiDispatcher
     }
 
     /**
-     * @param string $resource one of: orders, order, products, delivery-methods, order-state-callback
+     * @param string $resource one of: orders, order, products, delivery-methods, order-state-callback, order-payment
      * @param string $method HTTP method (GET/POST)
      * @param array $get query parameters
      * @param string $rawBody raw request body (for POST resources)
@@ -113,6 +113,20 @@ class MiguelApiDispatcher
                     return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
                 }
                 return $this->module->createOutboundOrder($data);
+
+            case 'order-payment':
+                if ($method !== 'POST') {
+                    return MiguelApiResponse::error(MiguelApiError::methodNotAllowed($method));
+                }
+                $data = json_decode($rawBody, true);
+                if (!is_array($data)) {
+                    return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
+                }
+                $idempotencyKey = trim((string) ($_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? ''));
+                if ($idempotencyKey === '') {
+                    return MiguelApiResponse::error(MiguelApiError::idempotencyKeyRequired());
+                }
+                return $this->module->markOutboundOrderPaid($data, $idempotencyKey);
 
             default:
                 return MiguelApiResponse::error(MiguelApiError::resourceNotFound((string) $resource));

@@ -7,8 +7,9 @@ info:
     url: https://github.com/servantes-io/miguel-prestashop/blob/main/LICENSE.txt
   description: >
     HTTP API exposed by the Miguel PrestaShop module for the Miguel backend.
-    Four endpoints: list updated orders, fetch a single order by its code, list
-    products, and a callback that switches a PrestaShop order status.
+    Five endpoints: list updated orders, fetch a single order by its code, list
+    products, mark a Miguel outbound order paid, and a callback that switches a
+    PrestaShop order status.
 
 
     ## Routing & URLs
@@ -31,14 +32,14 @@ info:
       `.../order-state-callback.php`.
 
 
-    The `{resource}` values are `orders`, `order`, `products`, and
+    The `{resource}` values are `orders`, `order`, `products`, `order-payment`, and
     `order-state-callback`. The paths in this document use the direct-access form
     because an OpenAPI path cannot contain a query string; the contract is
     identical for the recommended front-controller URL. The module reports the
     exact per-resource front-controller URLs to the Miguel backend in the
     `endpoints` object of the `/v2/eshop/prestashop/connect` payload
     (`endpoints.orders`, `endpoints.order`, `endpoints.products`,
-    `endpoints.orderStateCallback`).
+    `endpoints.orderPayment`, `endpoints.orderStateCallback`).
 
 
     ## Response contract
@@ -673,6 +674,49 @@ paths:
                         currency: CZK
                         name: My eBook
                         active: true
+
+  /modules/miguel/order-payment.php:
+    post:
+      tags: [orders]
+      summary: Mark a Miguel outbound order paid
+      operationId: orderPayment
+      description: >
+        Called after Miguel confirms a mobile payment. The module verifies that
+        the order belongs to Miguel's outbound-order map and applies PrestaShop's
+        native `PS_OS_PAYMENT` state exactly once using the Idempotency-Key header.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_id]
+              properties:
+                order_id:
+                  type: integer
+                  minimum: 1
+            example:
+              order_id: 481
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment result or error envelope; errors are represented by `result: false`.
+          content:
+            application/json:
+              examples:
+                success:
+                  value:
+                    result: true
+                    debug: ""
+                    payment:
+                      order_id: 481
+                      paid: true
+                      idempotent_replay: false
 
   /modules/miguel/order-state-callback.php:
     post:

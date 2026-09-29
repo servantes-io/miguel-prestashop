@@ -18,6 +18,7 @@ require_once 'src/utils/miguel-api-create-order-item.php';
 require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-outbound-order-request.php';
 require_once 'src/utils/miguel-api-outbound-order-creator.php';
+require_once 'src/utils/miguel-api-order-payment.php';
 require_once 'src/utils/miguel-api-v2-order-request.php';
 require_once 'src/utils/miguel-api-v2-order-mapper.php';
 require_once 'src/utils/miguel-api-error.php';
@@ -28,6 +29,7 @@ use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiOutboundOrderCreator;
 use Miguel\Utils\MiguelApiOutboundOrderRequest;
+use Miguel\Utils\MiguelApiOrderPayment;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelApiV2OrderMapper;
 use Miguel\Utils\MiguelApiV2OrderRequest;
@@ -691,6 +693,7 @@ class Miguel extends PaymentModule
             'deliveryMethods' => $endpointBase . 'delivery-methods',
             'orderCreate' => $endpointBase . 'order-create',
             'orderStateCallback' => $endpointBase . 'order-state-callback',
+            'orderPayment' => $endpointBase . 'order-payment',
         ];
 
         return $ps;
@@ -725,6 +728,23 @@ class Miguel extends PaymentModule
                 $this->_logger->logError('Unable to create Miguel outbound order: ' . $exception->getMessage());
             }
             return MiguelApiResponse::error(MiguelApiError::outboundOrderFailed($exception->getMessage()));
+        }
+    }
+
+    public function markOutboundOrderPaid(array $payload, string $idempotencyKey)
+    {
+        if (!array_key_exists('order_id', $payload) || filter_var($payload['order_id'], FILTER_VALIDATE_INT) === false) {
+            return MiguelApiResponse::error(MiguelApiError::invalidPayload('order_id must be a positive integer'));
+        }
+        try {
+            return MiguelApiResponse::success(
+                (new MiguelApiOrderPayment())->markPaid((int) $payload['order_id'], $idempotencyKey),
+                'payment'
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return MiguelApiResponse::error(MiguelApiError::invalidPayload($exception->getMessage()));
+        } catch (\Throwable $exception) {
+            return MiguelApiResponse::error(MiguelApiError::outboundPaymentFailed($exception->getMessage()));
         }
     }
 

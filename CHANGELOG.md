@@ -12,6 +12,11 @@
 - Orders created from Miguel are not sent back to Miguel by the immediate PrestaShop hook or by later periodic order export.
 - Idempotent creation records the cart before native order validation so a retry can recover an order
   whose external-order marker update was interrupted.
+- Added an idempotent `order-payment` endpoint for marking Miguel-created outbound orders as paid.
+- Payment synchronization transitions the native PrestaShop order to `PS_OS_PAYMENT` and safely replays
+  an already-finalized request with the same idempotency key.
+- Payment requests are restricted to orders recorded in the module's outbound-order table.
+- Added the payment idempotency table and the `1.6.0` upgrade migration.
 
 ## v1.4.0
 
