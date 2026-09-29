@@ -111,6 +111,16 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertSame('method.not_allowed', $response->getData()->getCode());
     }
 
+    public function testOrderPaymentWithoutIdempotencyKeyReturnsKeyRequired()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-payment', 'POST', [], json_encode(['order_id' => 123]));
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('idempotency.key_required', $response->getData()->getCode());
+    }
+
     public function testOrderStateCallbackWithEmptyBodyReturnsPayloadInvalid()
     {
         $_SERVER['Authorization'] = 'Bearer 1234';
