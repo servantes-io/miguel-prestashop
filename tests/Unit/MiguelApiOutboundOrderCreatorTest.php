@@ -73,9 +73,15 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
         $this->assertTrue($created->getResult());
         $this->assertGreaterThan(0, $created->getData()['order_id']);
         $this->assertFalse($created->getData()['idempotent_replay']);
+        $createdOrder = new \Order((int) $created->getData()['order_id']);
+        $expectedCreatedAt = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $createdOrder->date_add,
+            new \DateTimeZone(date_default_timezone_get())
+        )->format('c');
+        $this->assertSame($expectedCreatedAt, $created->getData()['created_at']);
         $detail = OrderDetail::getList((int) $created->getData()['order_id'])[0];
         $this->assertSame(360.0, (float) $detail['unit_price_tax_excl']);
-        $createdOrder = new \Order((int) $created->getData()['order_id']);
         $this->assertSame(199.0, (float) $createdOrder->total_shipping_tax_incl);
         $this->assertSame(559.0, (float) $createdOrder->total_paid_tax_incl);
         $this->assertSame(559.0, (float) $createdOrder->total_paid);
@@ -83,7 +89,10 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
         $this->assertTrue($replayed->getResult());
         $this->assertSame($created->getData()['order_id'], $replayed->getData()['order_id']);
         $this->assertTrue($replayed->getData()['idempotent_replay']);
-        $this->assertSame([], $module->getUpdatedOrders('2000-01-01T00:00:00+00:00'));
+        $this->assertSame($created->getData()['created_at'], $replayed->getData()['created_at']);
+        $updatedOrders = $module->getUpdatedOrders('2000-01-01T00:00:00+00:00');
+        $updatedOrderIds = array_map('intval', array_column($updatedOrders, 'id'));
+        $this->assertNotContains((int) $created->getData()['order_id'], $updatedOrderIds);
 
         // A native order may exist even when the marker update was interrupted. The cart link
         // lets the next idempotent request recover and finalize it instead of getting stuck.
