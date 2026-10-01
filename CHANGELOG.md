@@ -17,6 +17,8 @@
   an already-finalized request with the same idempotency key.
 - Payment requests are restricted to orders recorded in the module's outbound-order table.
 - Added the payment idempotency table and the `1.6.0` upgrade migration.
+- Outbound order-create responses now include the PrestaShop-authoritative `created_at` timestamp,
+  including idempotent replays.
 
 ## v1.4.0
 

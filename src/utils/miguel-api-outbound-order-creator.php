@@ -18,7 +18,7 @@ class MiguelApiOutboundOrderCreator
     }
 
     /**
-     * @return array{order_id:int,idempotent_replay:bool}
+     * @return array{order_id:int,idempotent_replay:bool,created_at:string}
      */
     public function create(array $request)
     {
@@ -31,19 +31,19 @@ class MiguelApiOutboundOrderCreator
                 throw new \RuntimeException('An idempotency key was already used with a different payload.');
             }
             if ((int) $existing['id_order'] > 0 && ((int) $existing['finalized'] === 1 || $storedHash === '')) {
-                return ['order_id' => (int) $existing['id_order'], 'idempotent_replay' => true];
+                return $this->response((int) $existing['id_order'], true);
             }
             if ((int) $existing['id_order'] > 0) {
                 $this->finalizeCreatedOrder((int) $existing['id_order'], $request);
                 $this->completeIdempotencyKey($request['idempotency_key'], (int) $existing['id_order']);
-                return ['order_id' => (int) $existing['id_order'], 'idempotent_replay' => true];
+                return $this->response((int) $existing['id_order'], true);
             }
             $recoveredOrderId = $this->findOrderByCart((int) ($existing['id_cart'] ?? 0));
             if ($recoveredOrderId > 0) {
                 $this->storeCreatedOrder($request['idempotency_key'], $recoveredOrderId);
                 $this->finalizeCreatedOrder($recoveredOrderId, $request);
                 $this->completeIdempotencyKey($request['idempotency_key'], $recoveredOrderId);
-                return ['order_id' => $recoveredOrderId, 'idempotent_replay' => true];
+                return $this->response($recoveredOrderId, true);
             }
             throw new \RuntimeException('An order with this idempotency key is already being created.');
         }
@@ -95,13 +95,40 @@ class MiguelApiOutboundOrderCreator
             $this->storeCreatedOrder($request['idempotency_key'], $orderId);
             $this->finalizeCreatedOrder($orderId, $request);
             $this->completeIdempotencyKey($request['idempotency_key'], $orderId);
-            return ['order_id' => $orderId, 'idempotent_replay' => false];
+            return $this->response($orderId, false);
         } catch (\Exception $exception) {
             if ($createdOrderId < 1) {
                 $this->releaseIdempotencyKey($request['idempotency_key']);
             }
             throw $exception;
         }
+    }
+
+    /**
+     * Return the shop-authoritative creation time for both fresh responses and idempotent replays.
+     *
+     * @return array{order_id:int,idempotent_replay:bool,created_at:string}
+     */
+    private function response($orderId, $idempotentReplay)
+    {
+        $order = new \Order((int) $orderId);
+        if (!\Validate::isLoadedObject($order) || empty($order->date_add)) {
+            throw new \RuntimeException('PrestaShop order creation returned an order without date_add.');
+        }
+        $createdAt = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            (string) $order->date_add,
+            new \DateTimeZone(date_default_timezone_get())
+        );
+        if ($createdAt === false) {
+            throw new \RuntimeException('PrestaShop order creation returned an invalid date_add.');
+        }
+
+        return [
+            'order_id' => (int) $orderId,
+            'idempotent_replay' => (bool) $idempotentReplay,
+            'created_at' => $createdAt->format('c'),
+        ];
     }
 
     private function assertSingleCarrier(array $request)
