@@ -1,6 +1,17 @@
 # PrestaShop 1.7.8.x (the version seeded from vendor2) requires PHP <= 7.4.
 FROM php:7.4-cli-bullseye
 
+# Debian 11 (bullseye) left LTS in August 2026 and its packages moved to
+# archive.debian.org: the live mirror still serves the indexes but 404s the
+# packages, so `apt-get install` failed. Point apt at the archive (whose
+# Release files are past their Valid-Until date, hence the check-valid flag).
+RUN printf '%s\n' \
+        'deb http://archive.debian.org/debian bullseye main' \
+        'deb http://archive.debian.org/debian-security bullseye-security main' \
+        > /etc/apt/sources.list \
+    && rm -f /etc/apt/sources.list.d/* \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+
 # Extensions required by PrestaShop core + the module test bootstrap.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git unzip rsync default-mysql-client \
