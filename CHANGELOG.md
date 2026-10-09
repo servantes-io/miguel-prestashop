@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.5.0
+
+Added:
+
+- The module reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer), a failed order sync (`ORDER_SYNC_FAILED`) and a failed product export (`PRODUCT_EXPORT_FAILED`). Reports wait in the `MIGUEL_ERROR_REPORTS` configuration value (at most 50, the oldest dropped) and are sent through the "Cron tasks manager" module (`cronjobs`, hook `actionCronJob`) and after the next successful call to Miguel from the back office — never during a customer's request. Install and enable the "Cron tasks manager" module for regular sending: without it, reports leave only when the back office calls Miguel (the module's configuration page, an order status changed by an admin). A report's `context` holds ids only, never a customer's e-mail, name or address.
+
+Changed:
+
+- An error while sending an order to Miguel no longer escapes the order status change; it is reported instead.
+
 ## v1.4.0
 
 Added:
