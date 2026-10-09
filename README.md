@@ -1,4 +1,4 @@
-# Miguel for Prestashop
+# Miguel for PrestaShop
 
 Prestashop module to sell watermarked ebooks and audiobooks through [Miguel](https://servantes.cz/en/miguel) by [Servantes](https://servantes.cz/en/).
 
