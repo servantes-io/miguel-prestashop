@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 #
-# prestashop_phpunit_docker.sh — run this module's whole PHPUnit suite in
-# Docker, the way `make test-docker` does, on a machine that has Docker but no
-# PHP toolchain.
+# phpunit_docker.sh — run this module's whole PHPUnit suite in Docker, the
+# way `make test-docker` does, on a machine that has Docker but no PHP
+# toolchain.
 #
 # It takes NO arguments, on purpose. The youtrack-triage implement loop runs it
 # by name as this repository's test command, admits it only without arguments,
 # and before running it requires this file, docker-compose.test.yml,
 # Dockerfile.test and docker/test-entrypoint.sh to be byte-identical to
-# origin/main — so a branch cannot change what "run the tests" means. It is
-# named apart from miguel-woocommerce's scripts/phpunit_docker.sh because the
-# loop pins each wrapper, by name, to the chain of files it runs, and this one
-# runs a different chain. For a filtered run while developing, use
+# origin/main — so a branch cannot change what "run the tests" means. It has
+# the same name as miguel-woocommerce's wrapper; the loop pins each repo's own
+# chain. For a filtered run while developing, use
 # `make test-docker ARGS="--filter X"`.
 #
 # What it does, in order:
@@ -32,7 +31,7 @@
 set -euo pipefail
 
 if [ "$#" -ne 0 ]; then
-    echo "prestashop_phpunit_docker.sh takes no arguments (see the header for a filtered run)" >&2
+    echo "phpunit_docker.sh takes no arguments (see the header for a filtered run)" >&2
     exit 2
 fi
 
