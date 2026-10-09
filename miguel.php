@@ -20,6 +20,7 @@ require_once 'src/utils/miguel-api-v2-order-request.php';
 require_once 'src/utils/miguel-api-v2-order-mapper.php';
 require_once 'src/utils/miguel-api-error.php';
 require_once 'src/utils/miguel-api-dispatcher.php';
+require_once 'src/utils/miguel-error-reporter.php';
 require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
@@ -27,6 +28,7 @@ use Miguel\Utils\MiguelApiError;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelApiV2OrderMapper;
 use Miguel\Utils\MiguelApiV2OrderRequest;
+use Miguel\Utils\MiguelErrorReporter;
 use Miguel\Utils\MiguelSettings;
 
 // uncomment this line for debugging (look for debug.log in the module directory)
@@ -42,6 +44,7 @@ class Miguel extends Module
         'header',
         'actionOrderStatusUpdate', // called when the order status is changed
         'displayCustomerAccount', // called when the customer account is displayed
+        'actionCronJob', // called by the "Cron tasks manager" module; sends the buffered error reports
     ];
 
     /** Seconds to wait for the connect POST during upgrade so the upgrade screen never hangs. */
@@ -58,7 +61,7 @@ class Miguel extends Module
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.4.0';
+        $this->version = '1.5.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;
@@ -120,6 +123,7 @@ class Miguel extends Module
     public function uninstall()
     {
         MiguelSettings::deleteAll();
+        MiguelErrorReporter::deleteAll();
 
         // here is normal uninstall process, because of comments and other lint issues I have deleted the file
         // include dirname(__FILE__) . '/src/sql/uninstall.php';
@@ -505,22 +509,51 @@ class Miguel extends Module
         if (false == isset($params['id_order'])) {
             return;
         }
-        $order = new Order((int) $params['id_order']);
-        if (false == Validate::isLoadedObject($order)) {
-            return;
+
+        try {
+            $order = new Order((int) $params['id_order']);
+            if (false == Validate::isLoadedObject($order)) {
+                return;
+            }
+
+            $paid = isset($params['newOrderStatus'])
+                ? (bool) $params['newOrderStatus']->paid
+                : $order->hasBeenPaid();
+
+            $body_order = MiguelApiV2OrderRequest::build($order, $paid);
+            if (null === $body_order) {
+                // no products, or none with a reference — nothing to send
+                return;
+            }
+
+            $this->curlPost('/v2/orders', $body_order);
+        } catch (Throwable $e) {
+            // A failed sync must not break the status change — at checkout, the customer's order.
+            MiguelErrorReporter::report('ORDER_SYNC_FAILED', $e->getMessage(), [
+                'context' => ['orderId' => (string) (int) $params['id_order']],
+            ]);
         }
+    }
 
-        $paid = isset($params['newOrderStatus'])
-            ? (bool) $params['newOrderStatus']->paid
-            : $order->hasBeenPaid();
+    /**
+     * Send the buffered error reports. Called by the "Cron tasks manager" module at getCronFrequency().
+     *
+     * @param array<string,mixed> $params
+     */
+    public function hookActionCronJob($params = [])
+    {
+        MiguelErrorReporter::flush($this);
+    }
 
-        $body_order = MiguelApiV2OrderRequest::build($order, $paid);
-        if (null === $body_order) {
-            // no products, or none with a reference — nothing to send
-            return;
-        }
-
-        $this->curlPost('/v2/orders', $body_order);
+    /**
+     * When the "Cron tasks manager" module calls hookActionCronJob(): -1 everywhere means on every run of its
+     * scheduler, which is hourly in its default (web service) mode, else as often as the merchant's crontab.
+     *
+     * @return array<string,int>
+     */
+    public function getCronFrequency()
+    {
+        return ['hour' => -1, 'day' => -1, 'month' => -1, 'day_of_week' => -1];
     }
 
     /**
@@ -565,11 +598,16 @@ class Miguel extends Module
         $response = curl_exec($curl);
 
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
         curl_close($curl);
 
         if (200 == $http_status) {
+            $this->flushErrorReportsAfterSuccess();
+
             return $response;
         }
+
+        MiguelErrorReporter::reportFailedCall('GET', $uri, $http_status, $response, $curl_error);
 
         return false;
     }
@@ -625,12 +663,39 @@ class Miguel extends Module
         $response = curl_exec($curl);
 
         $http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($curl);
         curl_close($curl);
         if ($http_status >= 200 && $http_status < 300) {
+            $this->flushErrorReportsAfterSuccess();
+
             return (strlen($response) < 1) ? (true) : ($response);
         }
 
+        MiguelErrorReporter::reportFailedCall('POST', $uri, $http_status, $response, $curl_error);
+
         return false;
+    }
+
+    /**
+     * Miguel answered, so send what is buffered — but only in the back office: a front-office request is a
+     * customer's (at checkout, the order hook), and the send may take up to MiguelErrorReporter::TIMEOUT seconds.
+     * There the cron hook sends it instead.
+     */
+    private function flushErrorReportsAfterSuccess()
+    {
+        if ($this->isBackOfficeRequest()) {
+            MiguelErrorReporter::flush($this);
+        }
+    }
+
+    /**
+     * Whether this request is the back office's: its index.php defines _PS_ADMIN_DIR_, the front office never does.
+     *
+     * @return bool
+     */
+    protected function isBackOfficeRequest()
+    {
+        return defined('_PS_ADMIN_DIR_');
     }
 
     public function getCurrentApiConfiguration()
@@ -789,6 +854,8 @@ class Miguel extends Module
 
             return $all_products_ret;
         } catch (Exception $e) {
+            MiguelErrorReporter::report('PRODUCT_EXPORT_FAILED', $e->getMessage());
+
             return ['error' => $e->getMessage()];
         }
     }
@@ -1046,7 +1113,12 @@ class Miguel extends Module
             }
             $decoded = json_decode($json, true);
             if (!is_array($decoded)) {
+                MiguelErrorReporter::reportBadResponse('GET', $uri, $json, 'The orders list is not a JSON object');
+
                 return $page === 1 ? false : $orders;
+            }
+            if (!isset($decoded['data']) || !is_array($decoded['data'])) {
+                MiguelErrorReporter::reportBadResponse('GET', $uri, $json, 'data is missing or not a list');
             }
             $orders += MiguelApiV2OrderMapper::indexByCode($decoded);
             $next = MiguelApiV2OrderMapper::nextPage($decoded);

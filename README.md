@@ -72,6 +72,7 @@ For more info look at [docs](https://docs.miguel.servantes.cz/en/docs/platforms/
 - automatic mail delivery with download links
 - supported standard ebook formats EPUB, MOBI and PDF
 - supported audiobooks in MP3 format
+- reports the errors it catches (a failed call to Miguel, a failed order sync) to Servantes; install the "Cron tasks manager" module (`cronjobs`) so they are sent regularly
 
 ### Supported languages:
 - czech
