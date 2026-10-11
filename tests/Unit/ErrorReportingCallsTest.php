@@ -117,7 +117,11 @@ class ErrorReportingCallsTest extends DatabaseTestCase
     {
         $module = new Miguel();
         // The demo customer (pub@prestashop.com), who has orders: getOrderedBooks() asks Miguel only then.
-        $module->getContext()->customer = new \Customer(2);
+        // Looked up by email: its id depends on whether psgdpr's anonymous customer was installed first
+        // (2 on 1.7.8, 1 in the 8.x test database).
+        $id = (int) \Customer::customerExists('pub@prestashop.com', true);
+        $this->assertGreaterThan(0, $id, 'demo customer pub@prestashop.com not found');
+        $module->getContext()->customer = new \Customer($id);
 
         return $module;
     }
