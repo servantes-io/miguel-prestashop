@@ -40,5 +40,6 @@ require_once __DIR__ . '/Utility/DatabaseTestCase.php';
 require_once __DIR__ . '/Utility/ContextMocker.php';
 require_once __DIR__ . '/Utility/EntityCreator.php';
 require_once __DIR__ . '/Utility/MiguelMock.php';
+require_once __DIR__ . '/Utility/MiguelStubServer.php';
 
 Miguel\Utils\MiguelSettings::reset();
