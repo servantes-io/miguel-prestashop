@@ -15,6 +15,12 @@ class MiguelApiOutboundOrderRequestTest extends TestCase
             'currency' => 'CZK',
             'user_email' => 'buyer@example.test',
             'order_note' => 'Created in mobile app.',
+            'pickup_point' => [
+                'carrier' => 'packeta',
+                'id' => '2317',
+                'name' => 'Golčův Jeníkov',
+                'address' => 'Jiráskova 183, 582 82',
+            ],
             'billing' => [
                 'first_name' => 'Jan Novak',
                 'last_name' => 'Novak',
@@ -50,6 +56,9 @@ class MiguelApiOutboundOrderRequestTest extends TestCase
         $this->assertSame(2, $request['line_items'][0]['quantity']);
         $this->assertSame('199.000000', $request['line_items'][0]['total']);
         $this->assertSame(3, $request['shipping_lines'][0]['method_id']);
+        $this->assertSame('packeta', $request['pickup_point']['carrier']);
+        $this->assertSame('2317', $request['pickup_point']['id']);
+        $this->assertSame('Golčův Jeníkov', $request['pickup_point']['name']);
     }
 
     public function testRejectsMissingIdempotencyKey()
@@ -100,6 +109,12 @@ class MiguelApiOutboundOrderRequestTest extends TestCase
                 'total' => '199.00',
             ]],
             'shipping_lines' => [],
+            'pickup_point' => [
+                'carrier' => 'packeta',
+                'id' => '2317',
+                'name' => 'Test point',
+                'address' => 'Test address',
+            ],
         ], $replace);
     }
 }
