@@ -66,6 +66,13 @@ class MiguelApiOrderPayment
                 $history = new \OrderHistory();
                 $history->id_order = $orderId;
                 $history->changeIdOrderState($paymentStateId, $orderId);
+                // changeIdOrderState updates ps_orders.current_state but does
+                // not persist an entry in ps_order_history by itself.
+                // Keep the admin timeline consistent without sending a second
+                // payment email from this API endpoint.
+                if (!$history->add()) {
+                    throw new \RuntimeException('Unable to record the payment-accepted order history.');
+                }
                 $updatedOrder = new \Order($orderId);
                 if (!\Validate::isLoadedObject($updatedOrder)
                     || (int) $updatedOrder->current_state !== $paymentStateId) {

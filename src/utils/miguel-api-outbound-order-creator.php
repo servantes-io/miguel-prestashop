@@ -308,6 +308,65 @@ class MiguelApiOutboundOrderCreator
     private function finalizeCreatedOrder($orderId, array $request)
     {
         $this->freezeShippingPrice($orderId, $request);
+        // Keep the pickup-point projection recoverable when the first response
+        // is lost after the native order was created.
+        $this->savePacketeryPickupPoint($orderId, $request);
+    }
+
+    /**
+     * Persist Miguel's Packeta point in the official Packetery order table when
+     * the module is installed. This is deliberately local-only: it does not
+     * call Packeta and leaves exported=0, so no shipment can be submitted.
+     */
+    private function savePacketeryPickupPoint($orderId, array $request)
+    {
+        $point = $request['pickup_point'] ?? null;
+        if (!is_array($point) || ($point['carrier'] ?? '') !== 'packeta') {
+            return;
+        }
+
+        $db = \Db::getInstance();
+        $table = _DB_PREFIX_ . 'packetery_order';
+        if (!$db->executeS('SHOW TABLES LIKE "' . pSQL($table) . '"')) {
+            return;
+        }
+
+        if (!ctype_digit((string) $point['id'])) {
+            throw new \InvalidArgumentException('Packeta pickup point id must be numeric.');
+        }
+
+        $order = new \Order((int) $orderId);
+        if (!\Validate::isLoadedObject($order)) {
+            throw new \RuntimeException('Unable to load created PrestaShop order for Packetery pickup point.');
+        }
+        // Packetery reconciles this row with the carrier actually assigned to
+        // the PrestaShop order. Miguel's method_id is only a routing hint and
+        // can differ from the carrier selected by the cart during validateOrder.
+        $carrierId = (int) $order->id_carrier;
+        $currency = new \Currency((int) $order->id_currency);
+
+        $db->delete('packetery_order', '`id_order` = ' . (int) $orderId);
+        if (!$db->insert('packetery_order', [
+            'id_order' => (int) $orderId,
+            'id_cart' => (int) $order->id_cart,
+            'id_branch' => (int) $point['id'],
+            'name_branch' => pSQL($point['name']),
+            'currency_branch' => pSQL((string) $currency->iso_code),
+            'is_cod' => 0,
+            'exported' => 0,
+            'id_carrier' => $carrierId,
+            'is_ad' => 0,
+            'is_carrier' => 0,
+            'carrier_pickup_point' => null,
+            'zip' => null,
+            'city' => null,
+            'street' => null,
+            'house_number' => null,
+            'latitude' => null,
+            'longitude' => null,
+        ], true)) {
+            throw new \RuntimeException('Unable to store Packetery pickup point.');
+        }
     }
 
     private function freezeShippingPrice($orderId, array $request)

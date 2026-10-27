@@ -67,6 +67,19 @@ class MiguelApiOutboundOrderRequest
             }
         }
 
+        $pickupPoint = null;
+        if (isset($payload['pickup_point'])) {
+            if (!is_array($payload['pickup_point'])) {
+                throw new \InvalidArgumentException('pickup_point is invalid');
+            }
+            $pickupPoint = [
+                'carrier' => strtolower(self::string($payload['pickup_point'], 'carrier', true, 'pickup_point.carrier')),
+                'id' => self::string($payload['pickup_point'], 'id', true, 'pickup_point.id'),
+                'name' => self::string($payload['pickup_point'], 'name', true, 'pickup_point.name'),
+                'address' => self::string($payload['pickup_point'], 'address', false),
+            ];
+        }
+
         return [
             'idempotency_key' => $key,
             'currency' => $currency,
@@ -76,6 +89,7 @@ class MiguelApiOutboundOrderRequest
             'shipping' => $shipping,
             'line_items' => $items,
             'shipping_lines' => $shippingLines,
+            'pickup_point' => $pickupPoint,
         ];
     }
 
