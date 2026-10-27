@@ -48,6 +48,7 @@ if (!defined('_PS_VERSION_')) {
 class Miguel extends PaymentModule
 {
     public const HOOKS = [
+        'displayAdminOrderMainBottom',
         'header',
         'actionOrderStatusUpdate', // called when the order status is changed
         'actionEmailSendBefore', // suppress customer mail for API-created unpaid orders
@@ -118,6 +119,12 @@ class Miguel extends PaymentModule
      *
      * @return Context
      */
+    public function hookDisplayAdminOrderMainBottom($params)
+    {
+        require_once __DIR__ . '/src/utils/miguel-order-pickup-point.php';
+        return \Miguel\Utils\MiguelOrderPickupPoint::render((int) ($params['id_order'] ?? 0));
+    }
+
     public function getContext()
     {
         return $this->context;
