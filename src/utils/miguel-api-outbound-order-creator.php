@@ -250,7 +250,8 @@ class MiguelApiOutboundOrderCreator
     private function freezeProductPrice(\Cart $cart, array $product, array $item)
     {
         $address = new \Address((int) $cart->id_address_delivery);
-        $calculator = \TaxManagerFactory::getManager($address, (string) $product['id_tax_rules_group'])
+        $taxRulesGroupId = $product['id_tax_rules_group'];
+        $calculator = \TaxManagerFactory::getManager($address, $taxRulesGroupId)
             ->getTaxCalculator();
         $unitPrice = $calculator->removeTaxes((float) $item['total'] / (int) $item['quantity']);
         if (!\Db::getInstance()->insert('specific_price', [
