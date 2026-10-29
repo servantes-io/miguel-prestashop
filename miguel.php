@@ -28,9 +28,9 @@ require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiOrderPayment;
 use Miguel\Utils\MiguelApiOutboundOrderCreator;
 use Miguel\Utils\MiguelApiOutboundOrderRequest;
-use Miguel\Utils\MiguelApiOrderPayment;
 use Miguel\Utils\MiguelApiResponse;
 use Miguel\Utils\MiguelApiV2OrderMapper;
 use Miguel\Utils\MiguelApiV2OrderRequest;
@@ -125,7 +125,8 @@ class Miguel extends PaymentModule
     public function hookDisplayAdminOrderMainBottom($params)
     {
         require_once __DIR__ . '/src/utils/miguel-order-pickup-point.php';
-        return \Miguel\Utils\MiguelOrderPickupPoint::render((int) ($params['id_order'] ?? 0));
+
+        return Miguel\Utils\MiguelOrderPickupPoint::render((int) ($params['id_order'] ?? 0));
     }
 
     public function getContext()
@@ -515,7 +516,7 @@ class Miguel extends PaymentModule
             $this->_logger->logDebug('Order result: ' . json_encode($body_orders));
         }
 
-        if (count($body_orders['products']) < 1) {
+        if (empty($body_orders['products'])) {
             // there are no products in the order (or products with reference)
             return false;
         }
@@ -777,6 +778,7 @@ class Miguel extends PaymentModule
      * creates the native unpaid PrestaShop order.
      *
      * @param array $payload
+     *
      * @return MiguelApiResponse
      */
     public function createOutboundOrder(array $payload)
@@ -792,13 +794,15 @@ class Miguel extends PaymentModule
                 self::$suppressOutboundOrderEmail = false;
                 self::$suppressOutboundOrderSync = false;
             }
+
             return MiguelApiResponse::success($result, 'order');
-        } catch (\InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException $exception) {
             return MiguelApiResponse::error(MiguelApiError::invalidPayload($exception->getMessage()));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             if (defined('_LOGGER_')) {
                 $this->_logger->logError('Unable to create Miguel outbound order: ' . $exception->getMessage());
             }
+
             return MiguelApiResponse::error(MiguelApiError::outboundOrderFailed($exception->getMessage()));
         }
     }
@@ -813,9 +817,9 @@ class Miguel extends PaymentModule
                 (new MiguelApiOrderPayment())->markPaid((int) $payload['order_id'], $idempotencyKey),
                 'payment'
             );
-        } catch (\InvalidArgumentException $exception) {
+        } catch (InvalidArgumentException $exception) {
             return MiguelApiResponse::error(MiguelApiError::invalidPayload($exception->getMessage()));
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             return MiguelApiResponse::error(MiguelApiError::outboundPaymentFailed($exception->getMessage()));
         }
     }
@@ -1002,7 +1006,7 @@ class Miguel extends PaymentModule
         $id_lang = (int) Configuration::get('PS_LANG_DEFAULT');
         $id_currency = (int) Configuration::get('PS_CURRENCY_DEFAULT');
         $currency = Currency::getCurrencyInstance($id_currency);
-        $currencyIso = $currency && !empty($currency->iso_code) ? $currency->iso_code : null;
+        $currencyIso = !empty($currency->iso_code) ? $currency->iso_code : null;
 
         $sql = 'SELECT c.`id_carrier`, c.`name`, c.`is_free`, c.`shipping_method`,
                     cl.`delay`, cz.`id_zone`, z.`name` AS `zone_name`, MIN(d.`price`) AS `price`

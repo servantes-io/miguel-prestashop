@@ -100,7 +100,7 @@ class MiguelApiOutboundOrderCreator
 
             return $this->response($orderId, false);
         } catch (\Exception $exception) {
-            if ($createdOrderId < 1) {
+            if (0 === $createdOrderId) {
                 $this->releaseIdempotencyKey($request['idempotency_key']);
             }
             throw $exception;

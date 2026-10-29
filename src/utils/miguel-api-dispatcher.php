@@ -112,6 +112,7 @@ class MiguelApiDispatcher
                 if (!is_array($data)) {
                     return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
                 }
+
                 return $this->module->createOutboundOrder($data);
 
             case 'order-payment':
@@ -126,6 +127,7 @@ class MiguelApiDispatcher
                 if ($idempotencyKey === '') {
                     return MiguelApiResponse::error(MiguelApiError::idempotencyKeyRequired());
                 }
+
                 return $this->module->markOutboundOrderPaid($data, $idempotencyKey);
 
             default:
