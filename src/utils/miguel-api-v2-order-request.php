@@ -62,7 +62,7 @@ class MiguelApiV2OrderRequest
             ];
         }
 
-        if (count($items) < 1) {
+        if ($items === []) {
             return null;
         }
 

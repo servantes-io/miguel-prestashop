@@ -25,12 +25,13 @@ class MiguelApiOutboundOrderRequest
         $shipping = isset($payload['shipping']) && is_array($payload['shipping'])
             ? self::address($payload, 'shipping') : $billing;
 
-        if (!isset($payload['line_items']) || !is_array($payload['line_items']) || count($payload['line_items']) < 1) {
+        $lineItems = $payload['line_items'] ?? null;
+        if (!is_array($lineItems) || $lineItems === []) {
             throw new \InvalidArgumentException('line_items is required');
         }
 
         $items = [];
-        foreach ($payload['line_items'] as $index => $item) {
+        foreach ($lineItems as $index => $item) {
             if (!is_array($item)) {
                 throw new \InvalidArgumentException('line_items[' . $index . '] is invalid');
             }
@@ -99,6 +100,7 @@ class MiguelApiOutboundOrderRequest
             throw new \InvalidArgumentException($name . ' is required');
         }
         $address = $payload[$name];
+
         return [
             'first_name' => self::string($address, 'first_name', true, $name . '.first_name'),
             'last_name' => self::string($address, 'last_name', true, $name . '.last_name'),
@@ -120,8 +122,10 @@ class MiguelApiOutboundOrderRequest
             if ($required) {
                 throw new \InvalidArgumentException($label . ' is required');
             }
+
             return null;
         }
+
         return trim($source[$key]);
     }
 
@@ -131,6 +135,7 @@ class MiguelApiOutboundOrderRequest
             || !is_numeric($source[$key])) {
             throw new \InvalidArgumentException($label . ' is required');
         }
+
         return number_format((float) $source[$key], 6, '.', '');
     }
 }

@@ -1,4 +1,17 @@
 <?php
+/**
+ * 2026 Servantes
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ *  @author Roman Kříž <roman.kriz@servantes.cz>
+ *  @copyright  2022 - 2026 Servantes
+ *  @license LICENSE.txt
+ */
 
 namespace Miguel\Utils;
 
@@ -99,6 +112,7 @@ class MiguelApiOrderPayment
             'SELECT `id_order`, `payload_hash`, `finalized` FROM `' . _DB_PREFIX_
             . 'miguel_outbound_order_payment` WHERE `idempotency_key` = "' . pSQL($idempotencyKey) . '"'
         );
+
         return $row === false ? null : $row;
     }
 }

@@ -36,6 +36,7 @@ class MiguelApiOutboundOrderCreator
             if ((int) $existing['id_order'] > 0) {
                 $this->finalizeCreatedOrder((int) $existing['id_order'], $request);
                 $this->completeIdempotencyKey($request['idempotency_key'], (int) $existing['id_order']);
+
                 return $this->response((int) $existing['id_order'], true);
             }
             $recoveredOrderId = $this->findOrderByCart((int) ($existing['id_cart'] ?? 0));
@@ -43,6 +44,7 @@ class MiguelApiOutboundOrderCreator
                 $this->storeCreatedOrder($request['idempotency_key'], $recoveredOrderId);
                 $this->finalizeCreatedOrder($recoveredOrderId, $request);
                 $this->completeIdempotencyKey($request['idempotency_key'], $recoveredOrderId);
+
                 return $this->response($recoveredOrderId, true);
             }
             throw new \RuntimeException('An order with this idempotency key is already being created.');
@@ -95,6 +97,7 @@ class MiguelApiOutboundOrderCreator
             $this->storeCreatedOrder($request['idempotency_key'], $orderId);
             $this->finalizeCreatedOrder($orderId, $request);
             $this->completeIdempotencyKey($request['idempotency_key'], $orderId);
+
             return $this->response($orderId, false);
         } catch (\Exception $exception) {
             if ($createdOrderId < 1) {
@@ -158,14 +161,17 @@ class MiguelApiOutboundOrderCreator
         $customer->firstname = $request['billing']['first_name'];
         $customer->lastname = $request['billing']['last_name'];
         $customer->email = $request['user_email'];
-        $customer->is_guest = 1;
+        $customer->is_guest = true;
         $customer->id_default_group = (int) \Configuration::get('PS_GUEST_GROUP');
         $customer->id_lang = (int) \Configuration::get('PS_LANG_DEFAULT');
-        $customer->passwd = \Tools::encrypt(\Tools::passwdGen(32));
+        // Tools::encrypt() was removed in PrestaShop 9. Guests never log in,
+        // but Customer still requires a valid legacy password value.
+        $customer->passwd = md5(_COOKIE_KEY_ . \Tools::passwdGen(32));
         $customer->secure_key = md5(uniqid((string) mt_rand(), true));
         if (!$customer->add()) {
             throw new \RuntimeException('Unable to create customer.');
         }
+
         return $customer;
     }
 
@@ -192,6 +198,7 @@ class MiguelApiOutboundOrderCreator
         if (!$address->add()) {
             throw new \RuntimeException('Unable to create address.');
         }
+
         return $address;
     }
 
@@ -231,6 +238,7 @@ class MiguelApiOutboundOrderCreator
                 throw new \RuntimeException('Unable to add product ' . $item['product_code'] . ' to cart.');
             }
         }
+
         return $cart;
     }
 
@@ -274,7 +282,7 @@ class MiguelApiOutboundOrderCreator
         $escaped = pSQL($reference);
         // Db::getRow/getValue append their own LIMIT 1 on PrestaShop 1.7.
         $attribute = $db->getRow('SELECT pa.`id_product`, pa.`id_product_attribute`, p.`id_tax_rules_group` FROM `' . _DB_PREFIX_ . 'product_attribute` pa INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.`id_product` = pa.`id_product` WHERE pa.`reference` = "' . $escaped . '"');
-        if (is_array($attribute) && (int) $attribute['id_product'] > 0) {
+        if ((int) ($attribute['id_product'] ?? 0) > 0) {
             return [
                 'id_product' => (int) $attribute['id_product'],
                 'id_product_attribute' => (int) $attribute['id_product_attribute'],
@@ -288,6 +296,7 @@ class MiguelApiOutboundOrderCreator
         $taxRulesGroupId = (int) $db->getValue(
             'SELECT `id_tax_rules_group` FROM `' . _DB_PREFIX_ . 'product` WHERE `id_product` = ' . $id
         );
+
         return ['id_product' => $id, 'id_product_attribute' => 0, 'id_tax_rules_group' => $taxRulesGroupId];
     }
 
@@ -302,6 +311,7 @@ class MiguelApiOutboundOrderCreator
                 $amount += (float) $line['total'];
             }
         }
+
         return number_format($amount, 6, '.', '');
     }
 
@@ -327,7 +337,7 @@ class MiguelApiOutboundOrderCreator
 
         $db = \Db::getInstance();
         $table = _DB_PREFIX_ . 'packetery_order';
-        if (!$db->executeS('SHOW TABLES LIKE "' . pSQL($table) . '"')) {
+        if (empty($db->executeS('SHOW TABLES LIKE "' . pSQL($table) . '"'))) {
             return;
         }
 
@@ -399,26 +409,26 @@ class MiguelApiOutboundOrderCreator
         $differenceIncl = $shippingIncl - (float) $order->total_shipping_tax_incl;
         $differenceExcl = $shippingExcl - (float) $order->total_shipping_tax_excl;
 
-        $order->total_shipping_tax_excl = number_format($shippingExcl, 6, '.', '');
-        $order->total_shipping_tax_incl = number_format($shippingIncl, 6, '.', '');
-        $order->total_shipping = number_format($shippingIncl, 6, '.', '');
+        $order->total_shipping_tax_excl = $shippingExcl;
+        $order->total_shipping_tax_incl = $shippingIncl;
+        $order->total_shipping = $shippingIncl;
         // PaymentModule::validateOrder() calculates these totals from the
         // native cart before the Miguel shipping amount is frozen. Keep all
         // tax-included/excluded totals in sync with the new shipping amount.
         // The order is unpaid, so total_paid_real must remain unchanged.
-        $order->total_paid_tax_excl = number_format(
+        $order->total_paid_tax_excl = (float) number_format(
             (float) $order->total_paid_tax_excl + $differenceExcl,
             6,
             '.',
             ''
         );
-        $order->total_paid_tax_incl = number_format(
+        $order->total_paid_tax_incl = (float) number_format(
             (float) $order->total_paid_tax_incl + $differenceIncl,
             6,
             '.',
             ''
         );
-        $order->total_paid = $order->total_paid_tax_incl;
+        $order->total_paid = (float) $order->total_paid_tax_incl;
         if (!$order->update()) {
             throw new \RuntimeException('Unable to freeze shipping price.');
         }
@@ -437,6 +447,7 @@ class MiguelApiOutboundOrderCreator
     private function findIdempotentOrder($key)
     {
         $row = \Db::getInstance()->getRow('SELECT `id_order`, `id_cart`, `payload_hash`, `finalized` FROM `' . _DB_PREFIX_ . 'miguel_outbound_order` WHERE `idempotency_key` = "' . pSQL($key) . '"');
+
         return $row === false ? null : $row;
     }
 
@@ -446,9 +457,7 @@ class MiguelApiOutboundOrderCreator
             'idempotency_key' => pSQL($key), 'payload_hash' => pSQL($payloadHash), 'id_cart' => 0, 'id_order' => 0, 'finalized' => 0,
         ])) {
             $dbError = trim((string) \Db::getInstance()->getMsgError());
-            throw new \RuntimeException(
-                'Unable to reserve idempotency key.' . ($dbError !== '' ? ' Database error: ' . $dbError : '')
-            );
+            throw new \RuntimeException('Unable to reserve idempotency key.' . ($dbError !== '' ? ' Database error: ' . $dbError : ''));
         }
     }
 

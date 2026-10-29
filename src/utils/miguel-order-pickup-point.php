@@ -1,4 +1,18 @@
 <?php
+/**
+ * 2026 Servantes
+ *
+ * This file is licenced under the Software License Agreement.
+ * With the purchase or the installation of the software in your application
+ * you accept the licence agreement.
+ *
+ * You must not modify, adapt or create derivative works of this source code
+ *
+ *  @author Roman Kříž <roman.kriz@servantes.cz>
+ *  @copyright  2022 - 2026 Servantes
+ *  @license LICENSE.txt
+ */
+
 namespace Miguel\Utils;
 
 /** Displays pickup information from the existing order message. */
@@ -9,6 +23,7 @@ class MiguelOrderPickupPoint
         if (!preg_match('/^Pickup point \(([^\r\n]+)\): ([^\r\n]+)\r?\n([^\r\n]+)(?:\r?\n([^\r\n]*))?/mu', (string) $note, $match)) {
             return null;
         }
+
         return ['carrier' => $match[1], 'point_id' => $match[2], 'name' => $match[3], 'address' => $match[4] ?? ''];
     }
 
@@ -17,14 +32,12 @@ class MiguelOrderPickupPoint
         $db = \Db::getInstance();
         $point = false;
         // validateOrder stores the original order note in ps_message.
-        if (!$point) {
-            $messages = $db->executeS('SELECT message FROM `' . _DB_PREFIX_ . 'message` WHERE id_order = '
-                . (int) $orderId . ' ORDER BY id_message DESC');
-            foreach ($messages ?: [] as $message) {
-                $point = self::fromNote($message['message']);
-                if ($point) {
-                    break;
-                }
+        $messages = $db->executeS('SELECT message FROM `' . _DB_PREFIX_ . 'message` WHERE id_order = '
+            . (int) $orderId . ' ORDER BY id_message DESC');
+        foreach ($messages ?: [] as $message) {
+            $point = self::fromNote($message['message']);
+            if ($point) {
+                break;
             }
         }
         if (!$point) {
@@ -34,6 +47,7 @@ class MiguelOrderPickupPoint
             return '';
         }
         $escape = function ($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); };
+
         return '<style>.js-order-notes-block textarea{min-height:120px!important;height:120px!important;}'
             . '#miguel-order-pickup-point{margin-top:12px;margin-bottom:12px;}'
             . '#miguel-order-pickup-point .card-body{padding:16px!important;}'

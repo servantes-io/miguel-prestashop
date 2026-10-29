@@ -2,22 +2,23 @@
 
 namespace Tests\Unit;
 
-use Currency;
-use Db;
 use Miguel;
-use Product;
-use OrderDetail;
-use StockAvailable;
 use Tests\Unit\Utility\DatabaseTestCase;
 
 class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
 {
+    private $countryIso;
+
     protected function setUp(): void
     {
         parent::setUp();
         error_reporting(E_ALL ^ E_WARNING ^ E_DEPRECATED);
+        $this->countryIso = (string) \Db::getInstance()->getValue(
+            'SELECT `iso_code` FROM `' . _DB_PREFIX_ . 'country` WHERE `active` = 1 ORDER BY `id_country` ASC'
+        );
+        $this->assertNotSame('', $this->countryIso);
 
-        Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel_outbound_order` (
+        \Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel_outbound_order` (
             `id_miguel_outbound_order` int(11) NOT NULL AUTO_INCREMENT,
             `idempotency_key` varchar(128) NOT NULL,
             `payload_hash` varchar(64) NULL,
@@ -28,8 +29,8 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             PRIMARY KEY (`id_miguel_outbound_order`),
             UNIQUE KEY `miguel_outbound_order_key` (`idempotency_key`)
         ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8');
-        Db::getInstance()->execute('INSERT IGNORE INTO `' . _DB_PREFIX_ . 'module` (`name`, `active`, `version`) VALUES ("miguel", 1, "1.6.0")');
-        Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel_outbound_order_payment` (
+        \Db::getInstance()->execute('INSERT IGNORE INTO `' . _DB_PREFIX_ . 'module` (`name`, `active`, `version`) VALUES ("miguel", 1, "1.6.0")');
+        \Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel_outbound_order_payment` (
             `id_miguel_outbound_order_payment` int(11) NOT NULL AUTO_INCREMENT,
             `idempotency_key` varchar(128) NOT NULL,
             `payload_hash` varchar(64) NOT NULL,
@@ -39,7 +40,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             PRIMARY KEY (`id_miguel_outbound_order_payment`),
             UNIQUE KEY `miguel_outbound_order_payment_key` (`idempotency_key`)
         ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8');
-        Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'packetery_order` (
+        \Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'packetery_order` (
             `id_order` int NOT NULL,
             `id_cart` int NOT NULL,
             `id_branch` int NULL,
@@ -66,21 +67,21 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
     public function testCreatesUnpaidNativeOrderAndReplaysIdempotently()
     {
         $reference = 'OUTBOUND-' . uniqid();
-        $product = new Product();
+        $product = new \Product();
         $product->name = 'Outbound book';
         $product->reference = $reference;
         $product->price = 90;
         $product->active = 1;
         $product->available_for_order = 1;
         $product->save();
-        StockAvailable::setQuantity((int) $product->id, 0, 10);
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
 
-        $currency = Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        $carrierId = (int) Db::getInstance()->getValue(
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $carrierId = (int) \Db::getInstance()->getValue(
             'SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'carrier` WHERE `active` = 1 AND `deleted` = 0'
         );
         $this->assertGreaterThan(0, $carrierId);
-        $module = new Miguel();
+        $module = new \Miguel();
         $module->active = true;
 
         $payload = [
@@ -89,7 +90,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             'user_email' => strtolower($reference) . '@example.test',
             'billing' => [
                 'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
-                'postcode' => '11000', 'country' => 'FR',
+                'postcode' => '11000', 'country' => $this->countryIso,
             ],
             'line_items' => [[
                 'product_code' => $reference, 'quantity' => 1, 'total' => '360.00',
@@ -112,7 +113,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             new \DateTimeZone(date_default_timezone_get())
         )->format('c');
         $this->assertSame($expectedCreatedAt, $created->getData()['created_at']);
-        $detail = OrderDetail::getList((int) $created->getData()['order_id'])[0];
+        $detail = \OrderDetail::getList((int) $created->getData()['order_id'])[0];
         $this->assertSame(360.0, (float) $detail['unit_price_tax_excl']);
         $this->assertSame(199.0, (float) $createdOrder->total_shipping_tax_incl);
         $this->assertSame(559.0, (float) $createdOrder->total_paid_tax_incl);
@@ -129,7 +130,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
         // A native order may exist even when the marker update was interrupted. The cart link
         // lets the next idempotent request recover and finalize it instead of getting stuck.
         $createdCartId = (int) (new \Order((int) $created->getData()['order_id']))->id_cart;
-        Db::getInstance()->update('miguel_outbound_order', [
+        \Db::getInstance()->update('miguel_outbound_order', [
             'id_cart' => $createdCartId,
             'id_order' => 0,
             'finalized' => 0,
@@ -143,17 +144,17 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
     public function testCreatesPacketaOrderDataFromMiguelPickupPoint()
     {
         $reference = 'OUTBOUND-PACKETA-' . uniqid();
-        $product = new Product();
+        $product = new \Product();
         $product->name = 'Outbound Packeta book';
         $product->reference = $reference;
         $product->price = 90;
         $product->active = 1;
         $product->available_for_order = 1;
         $product->save();
-        StockAvailable::setQuantity((int) $product->id, 0, 10);
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
 
-        $currency = Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        $carrierId = (int) Db::getInstance()->getValue(
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $carrierId = (int) \Db::getInstance()->getValue(
             'SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'carrier` WHERE `active` = 1 AND `deleted` = 0 ORDER BY `id_carrier` ASC'
         );
         if ($carrierId < 1) {
@@ -170,7 +171,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             $carrier->add();
             $carrierId = (int) $carrier->id;
         }
-        $module = new Miguel();
+        $module = new \Miguel();
         $module->active = true;
 
         $response = $module->createOutboundOrder([
@@ -179,7 +180,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             'user_email' => strtolower($reference) . '@example.test',
             'billing' => [
                 'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
-                'postcode' => '11000', 'country' => 'FR',
+                'postcode' => '11000', 'country' => $this->countryIso,
             ],
             'line_items' => [[
                 'product_code' => $reference, 'quantity' => 1, 'total' => '90.00',
@@ -195,34 +196,34 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
 
         $this->assertTrue($response->getResult(), json_encode($response->getData()));
         $orderId = (int) $response->getData()['order_id'];
-        $row = Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'packetery_order` WHERE `id_order` = ' . $orderId);
-        $orderCarrierId = (int) Db::getInstance()->getValue('SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'orders` WHERE `id_order` = ' . $orderId);
+        $row = \Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'packetery_order` WHERE `id_order` = ' . $orderId);
+        $orderCarrierId = (int) \Db::getInstance()->getValue('SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'orders` WHERE `id_order` = ' . $orderId);
         $this->assertSame('2317', (string) $row['id_branch']);
         $this->assertSame('Golčův Jeníkov', $row['name_branch']);
         $this->assertSame($orderCarrierId, (int) $row['id_carrier']);
         $this->assertSame(0, (int) $row['is_carrier']);
         $this->assertSame(0, (int) $row['exported']);
 
-        $orderHistoryBeforePayment = (int) Db::getInstance()->getValue(
+        $orderHistoryBeforePayment = (int) \Db::getInstance()->getValue(
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'order_history` WHERE `id_order` = ' . $orderId
         );
-        $payment = new \Miguel\Utils\MiguelApiOrderPayment();
+        $payment = new Miguel\Utils\MiguelApiOrderPayment();
         $paid = $payment->markPaid($orderId, 'PAYMENT-PACKETA-' . $reference);
         $this->assertFalse($paid['idempotent_replay']);
-        $this->assertSame(1, (int) Db::getInstance()->getValue(
+        $this->assertSame(1, (int) \Db::getInstance()->getValue(
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'order_history` WHERE `id_order` = ' . $orderId
             . ' AND `id_order_state` = ' . (int) \Configuration::get('PS_OS_PAYMENT')
         ));
-        $this->assertSame($orderHistoryBeforePayment + 1, (int) Db::getInstance()->getValue(
+        $this->assertSame($orderHistoryBeforePayment + 1, (int) \Db::getInstance()->getValue(
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'order_history` WHERE `id_order` = ' . $orderId
         ));
-        $this->assertSame('2317', (string) Db::getInstance()->getValue(
+        $this->assertSame('2317', (string) \Db::getInstance()->getValue(
             'SELECT `id_branch` FROM `' . _DB_PREFIX_ . 'packetery_order` WHERE `id_order` = ' . $orderId
         ));
 
         $replayedPayment = $payment->markPaid($orderId, 'PAYMENT-PACKETA-' . $reference);
         $this->assertTrue($replayedPayment['idempotent_replay']);
-        $this->assertSame(1, (int) Db::getInstance()->getValue(
+        $this->assertSame(1, (int) \Db::getInstance()->getValue(
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'order_history` WHERE `id_order` = ' . $orderId
             . ' AND `id_order_state` = ' . (int) \Configuration::get('PS_OS_PAYMENT')
         ));
@@ -231,17 +232,17 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
     public function testCreatesOrderUsingMiguelPrice()
     {
         $reference = 'OUTBOUND-MISMATCH-' . uniqid();
-        $product = new Product();
+        $product = new \Product();
         $product->name = 'Outbound book';
         $product->reference = $reference;
         $product->price = 100;
         $product->active = 1;
         $product->available_for_order = 1;
         $product->save();
-        StockAvailable::setQuantity((int) $product->id, 0, 10);
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
 
-        $currency = Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        $module = new Miguel();
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $module = new \Miguel();
         $module->active = true;
         $response = $module->createOutboundOrder([
             'idempotency_key' => 'OUTBOUND-ORDER-' . $reference,
@@ -249,7 +250,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             'user_email' => strtolower($reference) . '@example.test',
             'billing' => [
                 'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
-                'postcode' => '11000', 'country' => 'FR',
+                'postcode' => '11000', 'country' => $this->countryIso,
             ],
             'line_items' => [[
                 'product_code' => $reference, 'quantity' => 1, 'total' => '90.00',
@@ -259,24 +260,24 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
 
         $this->assertTrue($response->getResult());
         $this->assertGreaterThan(0, $response->getData()['order_id']);
-        $detail = OrderDetail::getList((int) $response->getData()['order_id'])[0];
+        $detail = \OrderDetail::getList((int) $response->getData()['order_id'])[0];
         $this->assertSame(90.0, (float) $detail['unit_price_tax_excl']);
     }
 
     public function testRejectsSameIdempotencyKeyWithDifferentPayload()
     {
         $reference = 'OUTBOUND-HASH-' . uniqid();
-        $product = new Product();
+        $product = new \Product();
         $product->name = 'Outbound hash book';
         $product->reference = $reference;
         $product->price = 100;
         $product->active = 1;
         $product->available_for_order = 1;
         $product->save();
-        StockAvailable::setQuantity((int) $product->id, 0, 10);
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
 
-        $currency = Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        $module = new Miguel();
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $module = new \Miguel();
         $module->active = true;
         $payload = [
             'idempotency_key' => 'OUTBOUND-HASH-' . $reference,
@@ -284,7 +285,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             'user_email' => strtolower($reference) . '@example.test',
             'billing' => [
                 'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
-                'postcode' => '11000', 'country' => 'FR',
+                'postcode' => '11000', 'country' => $this->countryIso,
             ],
             'line_items' => [[
                 'product_code' => $reference, 'quantity' => 1, 'total' => '90.00',
@@ -304,21 +305,21 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
     public function testRejectsMultipleShippingCarriers()
     {
         $reference = 'OUTBOUND-CARRIERS-' . uniqid();
-        $product = new Product();
+        $product = new \Product();
         $product->name = 'Outbound carrier book';
         $product->reference = $reference;
         $product->price = 100;
         $product->active = 1;
         $product->available_for_order = 1;
         $product->save();
-        StockAvailable::setQuantity((int) $product->id, 0, 10);
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
 
-        $currency = Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
-        $carrierIds = Db::getInstance()->executeS(
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $carrierIds = \Db::getInstance()->executeS(
             'SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'carrier` WHERE `active` = 1 AND `deleted` = 0 LIMIT 2'
         );
         $this->assertCount(2, $carrierIds);
-        $module = new Miguel();
+        $module = new \Miguel();
         $module->active = true;
         $payload = [
             'idempotency_key' => 'OUTBOUND-CARRIERS-' . $reference,
@@ -326,7 +327,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             'user_email' => strtolower($reference) . '@example.test',
             'billing' => [
                 'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
-                'postcode' => '11000', 'country' => 'FR',
+                'postcode' => '11000', 'country' => $this->countryIso,
             ],
             'line_items' => [[
                 'product_code' => $reference, 'quantity' => 1, 'total' => '90.00',
