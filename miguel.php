@@ -1025,7 +1025,7 @@ class Miguel extends PaymentModule
                     cl.`delay`, cz.`id_zone`, z.`name`
                 ORDER BY c.`position`, c.`id_carrier`, cz.`id_zone`';
 
-        $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $rows = Db::getInstance((bool) _PS_USE_SQL_SLAVE_)->executeS($sql);
         if (!is_array($rows)) {
             return [];
         }
@@ -1077,7 +1077,7 @@ class Miguel extends PaymentModule
                 GROUP BY rp.`id_range_price`, rp.`delimiter1`, rp.`delimiter2`
                 ORDER BY rp.`delimiter1`';
 
-        $rows = Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+        $rows = Db::getInstance((bool) _PS_USE_SQL_SLAVE_)->executeS($sql);
         if (!is_array($rows) || count($rows) === 0) {
             return [
                 'rules' => [[
