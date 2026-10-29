@@ -130,4 +130,19 @@ class MiguelApiError implements \JsonSerializable
     {
         return new self('unknown.error', 'Unknown error');
     }
+
+    public static function outboundOrderFailed($message): MiguelApiError
+    {
+        return new self('order.create_failed', 'Outbound order creation failed: ' . (string) $message);
+    }
+
+    public static function idempotencyKeyRequired(): MiguelApiError
+    {
+        return new self('idempotency.key_required', 'Idempotency-Key header is required');
+    }
+
+    public static function outboundPaymentFailed($message): MiguelApiError
+    {
+        return new self('order.payment_failed', 'Outbound order payment failed: ' . (string) $message);
+    }
 }

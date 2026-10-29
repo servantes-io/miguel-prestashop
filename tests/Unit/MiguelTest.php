@@ -64,4 +64,17 @@ final class MiguelTest extends DatabaseTestCase
         // VERIFY
         $this->assertTrue($res);
     }
+
+    public function testDeliveryMethodsAlwaysIncludePricingRules()
+    {
+        $methods = $this->sut->getDeliveryMethods();
+
+        $this->assertNotEmpty($methods);
+        foreach ($methods as $method) {
+            $this->assertArrayHasKey('pricing_rules', $method);
+            $this->assertIsArray($method['pricing_rules']);
+            $this->assertNotEmpty($method['pricing_rules']);
+            $this->assertArrayHasKey('disable_outside_ranges', $method);
+        }
+    }
 }

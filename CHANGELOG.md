@@ -9,6 +9,29 @@ Added:
 Changed:
 
 - An error while sending an order to Miguel no longer escapes the order status change; it is reported instead.
+## v1.6.0
+
+- Normalize frozen shipping totals before saving the native PrestaShop order.
+- Keep tax-included and tax-excluded order totals synchronized when freezing Miguel shipping prices.
+- Do not increase `total_paid_real` for unpaid outbound orders.
+- Outbound order creation now validates idempotency payloads and can resume finalization of an order that was created before a transient failure.
+- Orders with multiple different shipping carriers are rejected explicitly instead of silently using only the first carrier.
+- Shipping totals for repeated lines using the same carrier are combined before the native PrestaShop order totals are finalized.
+- Delivery-method responses now include complete PrestaShop price rules. Fixed-price and free carriers include an open-ended rule.
+- Orders created from Miguel are not sent back to Miguel by the immediate PrestaShop hook or by later periodic order export.
+- Idempotent creation records the cart before native order validation so a retry can recover an order
+  whose external-order marker update was interrupted.
+- Added an idempotent `order-payment` endpoint for marking Miguel-created outbound orders as paid.
+- Payment synchronization transitions the native PrestaShop order to `PS_OS_PAYMENT` and safely replays
+  an already-finalized request with the same idempotency key.
+- Payment requests are restricted to orders recorded in the module's outbound-order table.
+- Added the payment idempotency table and the `1.6.0` upgrade migration.
+- Outbound order-create responses now include the PrestaShop-authoritative `created_at` timestamp,
+  including idempotent replays.
+- Pickup-point data from Miguel outbound orders is persisted to the installed Packetery order table
+  when Packetery is present, without exporting the shipment to Packetery.
+- Payment and outbound-order handling is compatible with PrestaShop 9, including guest customer
+  creation without the removed `Tools::encrypt()` method.
 
 ## v1.4.0
 

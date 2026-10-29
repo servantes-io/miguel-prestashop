@@ -35,7 +35,7 @@ services:
       DB_NAME: prestashop
       # 1.7.8.x pairs with PHP 7.4 (Dockerfile.test) + MySQL 5.7 (db service).
       PRESTASHOP_VERSION: "1.7.8.10"
-    entrypoint: ["/project/docker/test-entrypoint.sh"]
+    entrypoint: ["/bin/bash", "-c", "sed 's/\\r$//' /project/docker/test-entrypoint.sh > /tmp/test-entrypoint.sh && exec /bin/bash /tmp/test-entrypoint.sh \"$@\"", "--"]
 
 volumes:
   ps_db_data:
