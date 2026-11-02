@@ -27,6 +27,10 @@ class ErrorReportingCallsTest extends DatabaseTestCase
     {
         parent::setUp();
 
+        // The order-status hook checks outbound orders before synchronizing.
+        // Install the module schema so this fixture does not depend on test order.
+        include dirname(__DIR__, 2) . '/src/sql/install.php';
+
         \Configuration::deleteByName(MiguelErrorReporter::BUFFER_KEY);
         \Configuration::deleteByName(MiguelErrorReporter::RETRY_AT_KEY);
         MiguelStubServer::reset();

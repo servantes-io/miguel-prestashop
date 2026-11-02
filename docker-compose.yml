@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 services:
   mysql:
     image: mysql:8
@@ -10,12 +10,12 @@ services:
   prestashop:
     image: prestashop/prestashop:1.7
     ports:
-      - '8082:80'
+      - "8181:80"
     environment:
       - DB_SERVER=mysql
-      - PS_DOMAIN=localhost:8082
+      - PS_DOMAIN=localhost:8181
     volumes:
-      - ./run/ps_data:/var/www/html
+      - ps_prestashop_data:/var/www/html
       - ./miguel:/var/www/html/modules/miguel
     depends_on:
       - mysql
@@ -23,6 +23,9 @@ services:
   adminer:
     image: adminer
     ports:
-      - '8083:8080'
+      - "8183:8080"
     depends_on:
       - mysql
+
+volumes:
+  ps_prestashop_data:
