@@ -18,7 +18,7 @@ class MiguelApiOutboundOrderCreator
     }
 
     /**
-     * @return array{order_id:int,idempotent_replay:bool,created_at:string}
+     * @return array{order_id:int,reference:string,idempotent_replay:bool,created_at:string}
      */
     public function create(array $request)
     {
@@ -110,7 +110,7 @@ class MiguelApiOutboundOrderCreator
     /**
      * Return the shop-authoritative creation time for both fresh responses and idempotent replays.
      *
-     * @return array{order_id:int,idempotent_replay:bool,created_at:string}
+     * @return array{order_id:int,reference:string,idempotent_replay:bool,created_at:string}
      */
     private function response($orderId, $idempotentReplay)
     {
@@ -129,6 +129,8 @@ class MiguelApiOutboundOrderCreator
 
         return [
             'order_id' => (int) $orderId,
+            // Miguel reports the order finished by this reference (see Miguel::setOrderStates).
+            'reference' => (string) $order->reference,
             'idempotent_replay' => (bool) $idempotentReplay,
             'created_at' => $createdAt->format('c'),
         ];

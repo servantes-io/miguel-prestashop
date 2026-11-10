@@ -28,6 +28,8 @@ Changed:
 - Added the payment idempotency table and the `1.6.0` upgrade migration.
 - Outbound order-create responses now include the PrestaShop-authoritative `created_at` timestamp,
   including idempotent replays.
+- Outbound order-create responses include the order's `reference`, so Miguel's order-finished callback finds the
+  order and applies the automatic state change (Miguel used to report the numeric id and got "unknown order id").
 - Pickup-point data from Miguel outbound orders is persisted to the installed Packetery order table
   when Packetery is present, without exporting the shipment to Packetery.
 - Payment and outbound-order handling is compatible with PrestaShop 9, including guest customer
