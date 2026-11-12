@@ -145,4 +145,14 @@ class MiguelApiError implements \JsonSerializable
     {
         return new self('order.payment_failed', 'Outbound order payment failed: ' . (string) $message);
     }
+
+    public static function outboundCancelFailed($message): MiguelApiError
+    {
+        return new self('order.cancel_failed', 'Outbound order cancellation failed: ' . (string) $message);
+    }
+
+    public static function idempotencyInProgress(): MiguelApiError
+    {
+        return new self('idempotency.in_progress', 'An order with this idempotency key is still being created');
+    }
 }
