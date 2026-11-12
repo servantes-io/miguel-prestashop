@@ -19,6 +19,7 @@ require_once 'src/utils/miguel-api-create-order-request.php';
 require_once 'src/utils/miguel-api-outbound-order-request.php';
 require_once 'src/utils/miguel-api-outbound-order-creator.php';
 require_once 'src/utils/miguel-api-order-payment.php';
+require_once 'src/utils/miguel-api-order-cancel.php';
 require_once 'src/utils/miguel-api-v2-order-request.php';
 require_once 'src/utils/miguel-api-v2-order-mapper.php';
 require_once 'src/utils/miguel-api-error.php';
@@ -28,6 +29,7 @@ require_once 'src/utils/polyfill-getallheaders.php';
 
 use Miguel\Utils\MiguelApiCreateOrderRequest;
 use Miguel\Utils\MiguelApiError;
+use Miguel\Utils\MiguelApiOrderCancel;
 use Miguel\Utils\MiguelApiOrderPayment;
 use Miguel\Utils\MiguelApiOutboundOrderCreator;
 use Miguel\Utils\MiguelApiOutboundOrderRequest;
@@ -765,6 +767,8 @@ class Miguel extends PaymentModule
             'products' => $endpointBase . 'products',
             'deliveryMethods' => $endpointBase . 'delivery-methods',
             'orderCreate' => $endpointBase . 'order-create',
+            'orderLookup' => $endpointBase . 'order-lookup',
+            'orderCancel' => $endpointBase . 'order-cancel',
             'orderStateCallback' => $endpointBase . 'order-state-callback',
             'orderPayment' => $endpointBase . 'order-payment',
         ];
@@ -805,6 +809,48 @@ class Miguel extends PaymentModule
 
             return MiguelApiResponse::error(MiguelApiError::outboundOrderFailed($exception->getMessage()));
         }
+    }
+
+    /** Cancels an unpaid order Miguel created, for a checkout Miguel abandoned. */
+    public function cancelOutboundOrder(array $payload)
+    {
+        if (!array_key_exists('order_id', $payload) || filter_var($payload['order_id'], FILTER_VALIDATE_INT) === false) {
+            return MiguelApiResponse::error(MiguelApiError::invalidPayload('order_id must be a positive integer'));
+        }
+        try {
+            // The status change is Miguel's own: it must not be sent back to Miguel as an order update.
+            self::$suppressOutboundOrderSync = true;
+            try {
+                return MiguelApiResponse::success((new MiguelApiOrderCancel())->cancel((int) $payload['order_id']), 'cancellation');
+            } finally {
+                self::$suppressOutboundOrderSync = false;
+            }
+        } catch (InvalidArgumentException $exception) {
+            return MiguelApiResponse::error(MiguelApiError::invalidPayload($exception->getMessage()));
+        } catch (Throwable $exception) {
+            return MiguelApiResponse::error(MiguelApiError::outboundCancelFailed($exception->getMessage()));
+        }
+    }
+
+    /**
+     * The order Miguel created with an idempotency key, without creating one: Miguel asks this when its create
+     * request got no answer, where a repeated create would make the order it wants to know about.
+     */
+    public function lookupOutboundOrder(string $idempotencyKey)
+    {
+        try {
+            $lookup = (new MiguelApiOutboundOrderCreator($this))->lookup($idempotencyKey);
+        } catch (Throwable $exception) {
+            return MiguelApiResponse::error(MiguelApiError::outboundOrderFailed($exception->getMessage()));
+        }
+        if ($lookup === MiguelApiOutboundOrderCreator::LOOKUP_IN_PROGRESS) {
+            return MiguelApiResponse::error(MiguelApiError::idempotencyInProgress());
+        }
+        if ($lookup === null) {
+            return MiguelApiResponse::error(MiguelApiError::orderNotFound($idempotencyKey));
+        }
+
+        return MiguelApiResponse::success($lookup, 'order');
     }
 
     public function markOutboundOrderPaid(array $payload, string $idempotencyKey)

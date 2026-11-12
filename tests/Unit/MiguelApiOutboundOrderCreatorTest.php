@@ -343,4 +343,208 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
         $this->assertFalse($response->getResult());
         $this->assertStringContainsString('Multiple shipping carriers', $response->getData()->getMessage());
     }
+
+    public function testLookupFindsTheOrderCreatedWithTheKey()
+    {
+        [$module, $key, $created] = $this->createOrderForLookup();
+
+        $found = $module->lookupOutboundOrder($key);
+
+        $this->assertTrue($found->getResult());
+        $this->assertSame('order', $found->getDataKey());
+        $this->assertSame($created['order_id'], $found->getData()['order_id']);
+        $this->assertSame($created['created_at'], $found->getData()['created_at']);
+    }
+
+    public function testLookupOfAnUnknownKeyIsNotFoundAndCreatesNothing()
+    {
+        $module = new \Miguel();
+        $module->active = true;
+        $before = (int) \Db::getInstance()->getValue('SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'orders`');
+
+        $response = $module->lookupOutboundOrder('OUTBOUND-UNKNOWN-' . uniqid());
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('order.not_found', $response->getData()->getCode());
+        $this->assertSame($before, (int) \Db::getInstance()->getValue('SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'orders`'));
+    }
+
+    public function testLookupFindsAnOrderWhoseMarkerUpdateWasInterrupted_WithoutTouchingTheMarker()
+    {
+        [$module, $key, $created] = $this->createOrderForLookup();
+        $cartId = (int) (new \Order((int) $created['order_id']))->id_cart;
+        \Db::getInstance()->update('miguel_outbound_order', ['id_cart' => $cartId, 'id_order' => 0, 'finalized' => 0],
+            '`idempotency_key` = "' . pSQL($key) . '"');
+
+        $found = $module->lookupOutboundOrder($key);
+
+        $this->assertTrue($found->getResult());
+        $this->assertSame($created['order_id'], $found->getData()['order_id']);
+        $this->assertSame(0, (int) \Db::getInstance()->getValue('SELECT `id_order` FROM `' . _DB_PREFIX_
+            . 'miguel_outbound_order` WHERE `idempotency_key` = "' . pSQL($key) . '"'), 'a lookup only reads');
+    }
+
+    public function testLookupReportsACreateInProgress()
+    {
+        $key = 'OUTBOUND-RUNNING-' . uniqid();
+        \Db::getInstance()->insert('miguel_outbound_order', [
+            'idempotency_key' => pSQL($key), 'payload_hash' => 'x', 'id_cart' => 0, 'id_order' => 0, 'finalized' => 0,
+        ]);
+        $module = new \Miguel();
+        $module->active = true;
+
+        $response = $module->lookupOutboundOrder($key);
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('idempotency.in_progress', $response->getData()->getCode());
+    }
+
+    public function testLookupIgnoresAReservationLeftByACreateThatDied()
+    {
+        $key = 'OUTBOUND-DEAD-' . uniqid();
+        // In the database's own clock, as the lookup compares it.
+        \Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'miguel_outbound_order` (`idempotency_key`, `payload_hash`,'
+            . ' `id_cart`, `id_order`, `finalized`, `date_add`) VALUES ("' . pSQL($key) . '", "x", 0, 0, 0, DATE_SUB(NOW(), INTERVAL 1 HOUR))');
+        $module = new \Miguel();
+        $module->active = true;
+
+        $response = $module->lookupOutboundOrder($key);
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('order.not_found', $response->getData()->getCode());
+    }
+
+    public function testCreateWhileAnotherCreateHoldsTheKeyIsStillRefused()
+    {
+        [$module, $payload] = $this->lookupPayload();
+        \Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'miguel_outbound_order` (`idempotency_key`, `payload_hash`,'
+            . ' `id_cart`, `id_order`, `finalized`, `date_add`) VALUES ("' . pSQL($payload['idempotency_key']) . '", "", 0, 0, 0, NOW())');
+
+        $response = $module->createOutboundOrder($payload);
+
+        $this->assertFalse($response->getResult());
+        $this->assertStringContainsString('already being created', $response->getData()->getMessage());
+    }
+
+    public function testCreateTakesOverTheKeyOfACreateThatDied()
+    {
+        [$module, $payload] = $this->lookupPayload();
+        // The dead create reserved the key an hour ago, in the database's own clock, and never made the order.
+        \Db::getInstance()->execute('INSERT INTO `' . _DB_PREFIX_ . 'miguel_outbound_order` (`idempotency_key`, `payload_hash`,'
+            . ' `id_cart`, `id_order`, `finalized`, `date_add`) VALUES ("' . pSQL($payload['idempotency_key']) . '", "", 0, 0, 0,'
+            . ' DATE_SUB(NOW(), INTERVAL 1 HOUR))');
+
+        $response = $module->createOutboundOrder($payload);
+
+        $this->assertTrue($response->getResult(), $response->getResult() ? '' : $response->getData()->getMessage());
+        $this->assertFalse($response->getData()['idempotent_replay']);
+        $this->assertSame(1, (int) \Db::getInstance()->getValue('SELECT COUNT(*) FROM `' . _DB_PREFIX_
+            . 'miguel_outbound_order` WHERE `idempotency_key` = "' . pSQL($payload['idempotency_key']) . '"'));
+    }
+
+    public function testCancelCancelsAnUnpaidOrderMiguelCreated()
+    {
+        [$module, , $created] = $this->createOrderForLookup();
+        $orderId = (int) $created['order_id'];
+        // Counted in the database: Order::getHistory() caches per request.
+        $historyRows = function () use ($orderId) {
+            return (int) \Db::getInstance()->getValue(
+                'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'order_history` WHERE `id_order` = ' . $orderId);
+        };
+        $historyBefore = $historyRows();
+
+        $response = $module->cancelOutboundOrder(['order_id' => $orderId]);
+
+        $this->assertTrue($response->getResult(), $response->getResult() ? '' : $response->getData()->getMessage());
+        $this->assertSame('cancellation', $response->getDataKey());
+        $this->assertSame(['order_id' => $orderId, 'cancelled' => true, 'idempotent_replay' => false], $response->getData());
+        $order = new \Order($orderId);
+        $this->assertSame((int) \Configuration::get('PS_OS_CANCELED'), (int) $order->current_state);
+        $this->assertSame($historyBefore + 1, $historyRows(), 'the cancellation is in the order history');
+    }
+
+    public function testCancelTwiceIsAReplay()
+    {
+        [$module, , $created] = $this->createOrderForLookup();
+        $module->cancelOutboundOrder(['order_id' => $created['order_id']]);
+
+        $again = $module->cancelOutboundOrder(['order_id' => $created['order_id']]);
+
+        $this->assertTrue($again->getResult());
+        $this->assertTrue($again->getData()['idempotent_replay']);
+    }
+
+    public function testCancelRefusesAPaidOrder()
+    {
+        [$module, , $created] = $this->createOrderForLookup();
+        $paid = $module->markOutboundOrderPaid(['order_id' => $created['order_id']], 'PAY-' . uniqid());
+        $this->assertTrue($paid->getResult());
+
+        $response = $module->cancelOutboundOrder(['order_id' => $created['order_id']]);
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('order.cancel_failed', $response->getData()->getCode());
+        $this->assertSame((int) \Configuration::get('PS_OS_PAYMENT'), (int) (new \Order((int) $created['order_id']))->current_state);
+    }
+
+    public function testCancelRefusesAnOrderMiguelDidNotCreate()
+    {
+        [$module, $key, $created] = $this->createOrderForLookup();
+        \Db::getInstance()->delete('miguel_outbound_order', '`idempotency_key` = "' . pSQL($key) . '"');
+
+        $response = $module->cancelOutboundOrder(['order_id' => $created['order_id']]);
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('payload.invalid', $response->getData()->getCode());
+        $this->assertNotSame((int) \Configuration::get('PS_OS_CANCELED'), (int) (new \Order((int) $created['order_id']))->current_state);
+    }
+
+    /**
+     * @return array{0:\Miguel,1:string,2:array}
+     */
+    private function createOrderForLookup()
+    {
+        [$module, $payload] = $this->lookupPayload();
+        $created = $module->createOutboundOrder($payload);
+        $this->assertTrue($created->getResult());
+
+        return [$module, $payload['idempotency_key'], $created->getData()];
+    }
+
+    /**
+     * A module and a valid create payload for a new product.
+     *
+     * @return array{0:\Miguel,1:array}
+     */
+    private function lookupPayload()
+    {
+        $reference = 'OUTBOUND-LOOKUP-' . uniqid();
+        $product = new \Product();
+        $product->name = 'Outbound lookup book';
+        $product->reference = $reference;
+        $product->price = 90;
+        $product->active = 1;
+        $product->available_for_order = 1;
+        $product->save();
+        \StockAvailable::setQuantity((int) $product->id, 0, 10);
+
+        $currency = \Currency::getCurrencyInstance((int) \Configuration::get('PS_CURRENCY_DEFAULT'));
+        $carrierId = (int) \Db::getInstance()->getValue(
+            'SELECT `id_carrier` FROM `' . _DB_PREFIX_ . 'carrier` WHERE `active` = 1 AND `deleted` = 0'
+        );
+        $module = new \Miguel();
+        $module->active = true;
+
+        return [$module, [
+            'idempotency_key' => 'OUTBOUND-LOOKUP-ORDER-' . $reference,
+            'currency' => $currency->iso_code,
+            'user_email' => strtolower($reference) . '@example.test',
+            'billing' => [
+                'first_name' => 'Jan', 'last_name' => 'Novak', 'address_1' => 'Main 1', 'city' => 'Prague',
+                'postcode' => '11000', 'country' => $this->countryIso,
+            ],
+            'line_items' => [['product_code' => $reference, 'quantity' => 1, 'total' => '90.00']],
+            'shipping_lines' => [['method_id' => (string) $carrierId, 'method_title' => 'Test carrier', 'total' => '0.00']],
+        ]];
+    }
 }

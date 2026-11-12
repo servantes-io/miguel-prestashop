@@ -37,7 +37,8 @@ class MiguelApiDispatcher
     }
 
     /**
-     * @param string $resource one of: orders, order, products, delivery-methods, order-state-callback, order-payment
+     * @param string $resource one of: orders, order, products, delivery-methods, order-state-callback, order-create,
+     *                         order-lookup, order-cancel, order-payment
      * @param string $method HTTP method (GET/POST)
      * @param array $get query parameters
      * @param string $rawBody raw request body (for POST resources)
@@ -114,6 +115,30 @@ class MiguelApiDispatcher
                 }
 
                 return $this->module->createOutboundOrder($data);
+
+            case 'order-cancel':
+                if ($method !== 'POST') {
+                    return MiguelApiResponse::error(MiguelApiError::methodNotAllowed($method));
+                }
+                $data = json_decode($rawBody, true);
+                if (!is_array($data)) {
+                    return MiguelApiResponse::error(MiguelApiError::invalidPayload('payload is required'));
+                }
+
+                return $this->module->cancelOutboundOrder($data);
+
+            case 'order-lookup':
+                // Whether the shop has the order Miguel created with this key, without creating one.
+                if ($method !== 'GET') {
+                    return MiguelApiResponse::error(MiguelApiError::methodNotAllowed($method));
+                }
+                $key = isset($get['idempotency_key']) && is_string($get['idempotency_key'])
+                    ? trim($get['idempotency_key']) : '';
+                if ($key === '') {
+                    return MiguelApiResponse::error(MiguelApiError::argumentNotSet('idempotency_key'));
+                }
+
+                return $this->module->lookupOutboundOrder($key);
 
             case 'order-payment':
                 if ($method !== 'POST') {

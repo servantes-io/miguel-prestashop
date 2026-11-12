@@ -21,6 +21,16 @@ Changed:
 - Orders created from Miguel are not sent back to Miguel by the immediate PrestaShop hook or by later periodic order export.
 - Idempotent creation records the cart before native order validation so a retry can recover an order
   whose external-order marker update was interrupted.
+- Added an `order-lookup` endpoint (`GET …&resource=order-lookup&idempotency_key=…`) that tells Miguel whether the
+  shop has the order it created with that key, without creating one: the order as a create replay answers it,
+  `idempotency.in_progress` while a create is still running, `order.not_found` when there is none. Its URL is
+  reported to Miguel on connect as `endpoints.orderLookup`.
+- Added an `order-cancel` endpoint (`POST …&resource=order-cancel`, `{order_id}`) that moves an unpaid order Miguel
+  created to `PS_OS_CANCELED`, for a checkout Miguel abandoned. It refuses a paid order and any order Miguel did not
+  create, answers a repeat as a replay, records the change in the order history and sends the customer no e-mail.
+  Its URL is reported on connect as `endpoints.orderCancel`.
+- An idempotency key is no longer refused for good after a create with it died before making the order (a PHP fatal
+  error, a killed worker): a reservation without an order older than 10 minutes is taken over by the next create.
 - Added an idempotent `order-payment` endpoint for marking Miguel-created outbound orders as paid.
 - Payment synchronization transitions the native PrestaShop order to `PS_OS_PAYMENT` and safely replays
   an already-finalized request with the same idempotency key.

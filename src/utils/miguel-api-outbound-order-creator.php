@@ -12,9 +12,43 @@ class MiguelApiOutboundOrderCreator
     /** @var \Miguel */
     private $module;
 
+    /** What {@see lookup()} answers while a create with the key is still running. */
+    const LOOKUP_IN_PROGRESS = 'in_progress';
+
+    /**
+     * How long a reservation without an order means "still being created". A create that died (a PHP fatal, a killed
+     * worker) never releases its reservation, so an older one is not a create in progress.
+     */
+    const LOOKUP_RESERVATION_FRESH_SECONDS = 600;
+
     public function __construct(\Miguel $module)
     {
         $this->module = $module;
+    }
+
+    /**
+     * The order created with an idempotency key, without creating or finalizing anything: the same answer a create
+     * replay gives, {@see LOOKUP_IN_PROGRESS} while a create is running, or null when the shop has no such order.
+     *
+     * @return array{order_id:int,idempotent_replay:bool,created_at:string}|string|null
+     */
+    public function lookup($idempotencyKey)
+    {
+        $row = \Db::getInstance()->getRow(
+            'SELECT `id_order`, `id_cart`, `date_add` > DATE_SUB(NOW(), INTERVAL ' . (int) self::LOOKUP_RESERVATION_FRESH_SECONDS
+            . ' SECOND) AS `fresh` FROM `' . _DB_PREFIX_ . 'miguel_outbound_order` WHERE `idempotency_key` = "'
+            . pSQL($idempotencyKey) . '"'
+        );
+        if ($row === false) {
+            return null;
+        }
+
+        $orderId = (int) $row['id_order'] > 0 ? (int) $row['id_order'] : $this->findOrderByCart((int) $row['id_cart']);
+        if ($orderId > 0 && \Validate::isLoadedObject(new \Order($orderId))) {
+            return $this->response($orderId, true);
+        }
+
+        return (int) $row['fresh'] === 1 ? self::LOOKUP_IN_PROGRESS : null;
     }
 
     /**
@@ -47,7 +81,10 @@ class MiguelApiOutboundOrderCreator
 
                 return $this->response($recoveredOrderId, true);
             }
-            throw new \RuntimeException('An order with this idempotency key is already being created.');
+            // A create that died never releases its reservation; an old one would refuse the key for good.
+            if (!$this->releaseStaleReservation($request['idempotency_key'])) {
+                throw new \RuntimeException('An order with this idempotency key is already being created.');
+            }
         }
 
         $this->reserveIdempotencyKey($request['idempotency_key'], $payloadHash);
@@ -492,6 +529,21 @@ class MiguelApiOutboundOrderCreator
         if (!\Db::getInstance()->update('miguel_outbound_order', ['id_order' => (int) $orderId, 'finalized' => 1], '`idempotency_key` = "' . pSQL($key) . '"')) {
             throw new \RuntimeException('Unable to store the created order.');
         }
+    }
+
+    /**
+     * Deletes a reservation without an order that is older than a create can run, in the database's own clock. Of two
+     * requests taking over the same dead create's key, only the one whose delete took the row goes on to create.
+     */
+    private function releaseStaleReservation($key)
+    {
+        $released = \Db::getInstance()->delete(
+            'miguel_outbound_order',
+            '`idempotency_key` = "' . pSQL($key) . '" AND `id_order` = 0 AND `date_add` <= DATE_SUB(NOW(), INTERVAL '
+            . (int) self::LOOKUP_RESERVATION_FRESH_SECONDS . ' SECOND)'
+        );
+
+        return $released && (int) \Db::getInstance()->Affected_Rows() === 1;
     }
 
     private function releaseIdempotencyKey($key)
