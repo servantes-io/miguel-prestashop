@@ -113,6 +113,8 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             new \DateTimeZone(date_default_timezone_get())
         )->format('c');
         $this->assertSame($expectedCreatedAt, $created->getData()['created_at']);
+        // Miguel reports the order finished by its reference, which order-state-callback looks up.
+        $this->assertSame($createdOrder->reference, $created->getData()['reference']);
         $detail = \OrderDetail::getList((int) $created->getData()['order_id'])[0];
         $this->assertSame(360.0, (float) $detail['unit_price_tax_excl']);
         $this->assertSame(199.0, (float) $createdOrder->total_shipping_tax_incl);
@@ -123,6 +125,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
         $this->assertSame($created->getData()['order_id'], $replayed->getData()['order_id']);
         $this->assertTrue($replayed->getData()['idempotent_replay']);
         $this->assertSame($created->getData()['created_at'], $replayed->getData()['created_at']);
+        $this->assertSame($created->getData()['reference'], $replayed->getData()['reference']);
         $updatedOrders = $module->getUpdatedOrders('2000-01-01T00:00:00+00:00');
         $updatedOrderIds = array_map('intval', array_column($updatedOrders, 'id'));
         $this->assertNotContains((int) $created->getData()['order_id'], $updatedOrderIds);
