@@ -163,6 +163,56 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertSame('method.not_allowed', $response->getData()->getCode());
     }
 
+    public function testOrderCancelRejectsNonPost()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-cancel', 'GET', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('method.not_allowed', $response->getData()->getCode());
+    }
+
+    public function testOrderCancelWithoutAnOrderIdReturnsPayloadInvalid()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-cancel', 'POST', [], '{}');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('payload.invalid', $response->getData()->getCode());
+    }
+
+    public function testOrderLookupRejectsNonGet()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-lookup', 'POST', ['idempotency_key' => 'K'], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('method.not_allowed', $response->getData()->getCode());
+    }
+
+    public function testOrderLookupWithoutAKeyReturnsArgumentNotSet()
+    {
+        $_SERVER['Authorization'] = 'Bearer 1234';
+
+        $response = $this->dispatcher()->dispatch('order-lookup', 'GET', [], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('argument.not_set', $response->getData()->getCode());
+    }
+
+    public function testOrderLookupRequiresTheApiKey()
+    {
+        $_SERVER['Authorization'] = 'Bearer wrong';
+
+        $response = $this->dispatcher()->dispatch('order-lookup', 'GET', ['idempotency_key' => 'K'], '');
+
+        $this->assertFalse($response->getResult());
+        $this->assertSame('api_key.invalid', $response->getData()->getCode());
+    }
+
     public function testOrderUnknownCodeReturnsOrderNotFound()
     {
         $_SERVER['Authorization'] = 'Bearer 1234';
@@ -185,5 +235,9 @@ class ApiDispatcherTest extends DatabaseTestCase
         $this->assertStringContainsString('resource=delivery-methods', $details['endpoints']['deliveryMethods']);
         $this->assertArrayHasKey('orderCreate', $details['endpoints']);
         $this->assertStringContainsString('resource=order-create', $details['endpoints']['orderCreate']);
+        $this->assertArrayHasKey('orderLookup', $details['endpoints']);
+        $this->assertStringContainsString('resource=order-lookup', $details['endpoints']['orderLookup']);
+        $this->assertArrayHasKey('orderCancel', $details['endpoints']);
+        $this->assertStringContainsString('resource=order-cancel', $details['endpoints']['orderCancel']);
     }
 }
