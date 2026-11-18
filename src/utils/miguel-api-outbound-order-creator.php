@@ -13,13 +13,13 @@ class MiguelApiOutboundOrderCreator
     private $module;
 
     /** What {@see lookup()} answers while a create with the key is still running. */
-    const LOOKUP_IN_PROGRESS = 'in_progress';
+    public const LOOKUP_IN_PROGRESS = 'in_progress';
 
     /**
      * How long a reservation without an order means "still being created". A create that died (a PHP fatal, a killed
      * worker) never releases its reservation, so an older one is not a create in progress.
      */
-    const LOOKUP_RESERVATION_FRESH_SECONDS = 600;
+    public const LOOKUP_RESERVATION_FRESH_SECONDS = 600;
 
     public function __construct(\Miguel $module)
     {
