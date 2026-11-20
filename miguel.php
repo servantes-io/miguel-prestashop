@@ -80,7 +80,7 @@ class Miguel extends PaymentModule
     {
         $this->name = 'miguel';
         $this->tab = 'administration';
-        $this->version = '1.6.0';
+        $this->version = '1.5.0';
         $this->author = 'Servantes';
         $this->need_instance = 1;
         $this->bootstrap = true;

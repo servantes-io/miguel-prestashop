@@ -17,14 +17,21 @@ if (!defined('_PS_VERSION_')) {
 }
 
 /**
- * Hook the module to actionCronJob, through which the "Cron tasks manager" module sends the buffered error reports.
+ * Create the outbound-order tables (`miguel_outbound_order`, `miguel_outbound_order_payment`) and hook the module to
+ * actionCronJob, through which the "Cron tasks manager" module sends the buffered error reports.
+ *
+ * The tables come from src/sql/install.php, the same `CREATE TABLE IF NOT EXISTS` statements a fresh install runs.
  *
  * @param Miguel $module
  *
- * @return bool always true — a failed registration must not block the module upgrade
+ * @return bool false when a table cannot be created — the outbound-order endpoints and the order export need them
  */
 function upgrade_module_1_5_0($module)
 {
+    if (false === include dirname(__FILE__) . '/../src/sql/install.php') {
+        return false;
+    }
+
     try {
         $module->registerHook('actionCronJob');
     } catch (Throwable $e) {
