@@ -4,46 +4,19 @@
 
 Added:
 
-- The module reports the errors it catches to Miguel (`POST /v2/eshop/errors`), which forwards them to Servantes' error tracking: a failed call to Miguel (unreachable, API key rejected, an HTTP error, an unreadable or incomplete answer), a failed order sync (`ORDER_SYNC_FAILED`) and a failed product export (`PRODUCT_EXPORT_FAILED`). Reports wait in the `MIGUEL_ERROR_REPORTS` configuration value (at most 50, the oldest dropped) and are sent through the "Cron tasks manager" module (`cronjobs`, hook `actionCronJob`) and after the next successful call to Miguel from the back office — never during a customer's request. Install and enable the "Cron tasks manager" module for regular sending: without it, reports leave only when the back office calls Miguel (the module's configuration page, an order status changed by an admin). A report's `context` holds ids only, never a customer's e-mail, name or address.
+- Caught errors (failed Miguel calls, order sync, product export) are reported to Miguel (`POST /v2/eshop/errors`). Reports are buffered and sent by the "Cron tasks manager" module (`actionCronJob`) or after the next successful back-office call to Miguel, and carry ids only, no customer data.
+- `delivery-methods` endpoint listing active carriers and zones with their PrestaShop price rules.
+- Idempotent `order-create` endpoint through which Miguel creates native PrestaShop orders. Retries replay or finish an interrupted create, and the response carries the order's `reference` and `created_at`.
+- Idempotent `order-payment` endpoint that marks a Miguel-created order as paid (`PS_OS_PAYMENT`).
+- `order-lookup` endpoint that tells Miguel whether an order exists for an idempotency key, without creating one.
+- `order-cancel` endpoint that cancels an unpaid Miguel-created order without e-mailing the customer.
+- Pickup points from Miguel orders are saved to Packetery (when installed) and shown on the order in the back office.
 
 Changed:
 
-- An error while sending an order to Miguel no longer escapes the order status change; it is reported instead.
-## v1.6.0
-
-- Normalize frozen shipping totals before saving the native PrestaShop order.
-- Keep tax-included and tax-excluded order totals synchronized when freezing Miguel shipping prices.
-- Do not increase `total_paid_real` for unpaid outbound orders.
-- Outbound order creation now validates idempotency payloads and can resume finalization of an order that was created before a transient failure.
-- Orders with multiple different shipping carriers are rejected explicitly instead of silently using only the first carrier.
-- Shipping totals for repeated lines using the same carrier are combined before the native PrestaShop order totals are finalized.
-- Delivery-method responses now include complete PrestaShop price rules. Fixed-price and free carriers include an open-ended rule.
-- Orders created from Miguel are not sent back to Miguel by the immediate PrestaShop hook or by later periodic order export.
-- Idempotent creation records the cart before native order validation so a retry can recover an order
-  whose external-order marker update was interrupted.
-- Added an `order-lookup` endpoint (`GET …&resource=order-lookup&idempotency_key=…`) that tells Miguel whether the
-  shop has the order it created with that key, without creating one: the order as a create replay answers it,
-  `idempotency.in_progress` while a create is still running, `order.not_found` when there is none. Its URL is
-  reported to Miguel on connect as `endpoints.orderLookup`.
-- Added an `order-cancel` endpoint (`POST …&resource=order-cancel`, `{order_id}`) that moves an unpaid order Miguel
-  created to `PS_OS_CANCELED`, for a checkout Miguel abandoned. It refuses a paid order and any order Miguel did not
-  create, answers a repeat as a replay, records the change in the order history and sends the customer no e-mail.
-  Its URL is reported on connect as `endpoints.orderCancel`.
-- An idempotency key is no longer refused for good after a create with it died before making the order (a PHP fatal
-  error, a killed worker): a reservation without an order older than 10 minutes is taken over by the next create.
-- Added an idempotent `order-payment` endpoint for marking Miguel-created outbound orders as paid.
-- Payment synchronization transitions the native PrestaShop order to `PS_OS_PAYMENT` and safely replays
-  an already-finalized request with the same idempotency key.
-- Payment requests are restricted to orders recorded in the module's outbound-order table.
-- Added the payment idempotency table and the `1.6.0` upgrade migration.
-- Outbound order-create responses now include the PrestaShop-authoritative `created_at` timestamp,
-  including idempotent replays.
-- Outbound order-create responses include the order's `reference`, so Miguel's order-finished callback finds the
-  order and applies the automatic state change (Miguel used to report the numeric id and got "unknown order id").
-- Pickup-point data from Miguel outbound orders is persisted to the installed Packetery order table
-  when Packetery is present, without exporting the shipment to Packetery.
-- Payment and outbound-order handling is compatible with PrestaShop 9, including guest customer
-  creation without the removed `Tools::encrypt()` method.
+- An error while sending an order to Miguel no longer breaks the order status change; it is reported instead.
+- Orders created by Miguel are not sent back to Miguel.
+- PrestaShop 9 compatibility for outbound orders and payments.
 
 ## v1.4.0
 

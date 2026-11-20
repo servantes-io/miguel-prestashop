@@ -317,4 +317,27 @@ class ErrorReportingCallsTest extends DatabaseTestCase
 
         $this->assertTrue(upgrade_module_1_5_0($module));
     }
+
+    public function testUpgradeCreatesTheOutboundOrderTables()
+    {
+        require_once __DIR__ . '/../../upgrade/upgrade-1.5.0.php';
+        $tables = ['miguel_outbound_order', 'miguel_outbound_order_payment'];
+        foreach ($tables as $table) {
+            \Db::getInstance()->execute('DROP TABLE IF EXISTS `' . _DB_PREFIX_ . $table . '`');
+        }
+        $module = new class extends Miguel {
+            public function registerHook($hook_name, $shop_list = null)
+            {
+                return true;
+            }
+        };
+
+        $this->assertTrue(upgrade_module_1_5_0($module));
+        foreach ($tables as $table) {
+            $this->assertNotEmpty(
+                \Db::getInstance()->executeS('SHOW TABLES LIKE "' . _DB_PREFIX_ . $table . '"'),
+                $table . ' exists after the upgrade'
+            );
+        }
+    }
 }

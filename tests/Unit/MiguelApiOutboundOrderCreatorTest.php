@@ -29,7 +29,7 @@ class MiguelApiOutboundOrderCreatorTest extends DatabaseTestCase
             PRIMARY KEY (`id_miguel_outbound_order`),
             UNIQUE KEY `miguel_outbound_order_key` (`idempotency_key`)
         ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8');
-        \Db::getInstance()->execute('INSERT IGNORE INTO `' . _DB_PREFIX_ . 'module` (`name`, `active`, `version`) VALUES ("miguel", 1, "1.6.0")');
+        \Db::getInstance()->execute('INSERT IGNORE INTO `' . _DB_PREFIX_ . 'module` (`name`, `active`, `version`) VALUES ("miguel", 1, "1.5.0")');
         \Db::getInstance()->execute('CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'miguel_outbound_order_payment` (
             `id_miguel_outbound_order_payment` int(11) NOT NULL AUTO_INCREMENT,
             `idempotency_key` varchar(128) NOT NULL,
