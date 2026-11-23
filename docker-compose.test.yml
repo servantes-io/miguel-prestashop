@@ -40,6 +40,15 @@ services:
       PRESTASHOP_VERSION: ${PRESTASHOP_VERSION:?PRESTASHOP_VERSION is not set (see .test-versions)}
     entrypoint: ["/bin/bash", "-c", "sed 's/\\r$//' /project/docker/test-entrypoint.sh > /tmp/test-entrypoint.sh && exec /bin/bash /tmp/test-entrypoint.sh \"$@\"", "--"]
 
+# The PrestaShop install and its database are cached in named volumes that the
+# entrypoint fills only when they are empty, so each is named by the versions it
+# holds: a version bump in .test-versions gets fresh volumes and installs that
+# version instead of running on the old one. Both carry the same key because the
+# install marker (in the source volume) says the database volume is installed.
+# Volumes of an older version stay until removed (`docker volume ls`,
+# `docker volume rm`). The versions are digits and dots.
 volumes:
   ps_db_data:
+    name: miguel-prestashop-ps${PRESTASHOP_VERSION:?PRESTASHOP_VERSION is not set (see .test-versions)}-mysql${MYSQL_VERSION:?MYSQL_VERSION is not set (see .test-versions)}-php${PHP_VERSION:?PHP_VERSION is not set (see .test-versions)}-db
   ps_prestashop:
+    name: miguel-prestashop-ps${PRESTASHOP_VERSION:?PRESTASHOP_VERSION is not set (see .test-versions)}-mysql${MYSQL_VERSION:?MYSQL_VERSION is not set (see .test-versions)}-php${PHP_VERSION:?PHP_VERSION is not set (see .test-versions)}-src
