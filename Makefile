@@ -1,4 +1,4 @@
-COMPOSE_TEST = docker compose -f docker-compose.test.yml
+COMPOSE_TEST = docker compose --env-file .test-versions -f docker-compose.test.yml
 
 build-zip:
 	bash .github/scripts/build-zip.sh

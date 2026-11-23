@@ -1,0 +1,5 @@
+# The versions scripts/phpunit_docker.sh and `make test-docker` run the tests on. CI's matrices are separate.
+# PrestaShop 1.7.8.x pairs with PHP 7.4 and MySQL 5.7 (it installs cleanly only on that MySQL).
+PHP_VERSION=7.4
+MYSQL_VERSION=5.7
+PRESTASHOP_VERSION=1.7.8.10

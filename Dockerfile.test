@@ -1,5 +1,6 @@
-# PrestaShop 1.7.8.x (the version seeded from vendor2) requires PHP <= 7.4.
-FROM php:7.4-cli-bullseye
+# The PHP version is in .test-versions (PrestaShop 1.7.8.x requires PHP <= 7.4).
+ARG PHP_VERSION
+FROM php:${PHP_VERSION}-cli-bullseye
 
 # Debian 11 (bullseye) left LTS in August 2026 and its packages moved to
 # archive.debian.org: the live mirror still serves the indexes but 404s the
