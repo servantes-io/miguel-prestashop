@@ -20,7 +20,7 @@ DB_USER="${DB_USER:-root}"
 DB_PASS="${DB_PASS:-password}"
 DB_NAME="${DB_NAME:-prestashop}"
 TEST_DB_NAME="test_${DB_NAME}"
-PRESTASHOP_VERSION="${PRESTASHOP_VERSION:-1.7.8.10}"
+PRESTASHOP_VERSION="${PRESTASHOP_VERSION:?PRESTASHOP_VERSION is not set (see .test-versions)}"
 
 PS_DIR="/project/vendor2/PrestaShop"
 DB_STRUCTURE="$PS_DIR/install-dev/data/db_structure.sql"
